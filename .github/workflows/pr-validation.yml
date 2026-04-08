@@ -1,0 +1,123 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [dev]
+
+jobs:
+  guard:
+    name: Enforce PR targets dev
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if base branch is not dev
+        if: github.base_ref != 'dev'
+        run: |
+          echo "ERROR: PRs must target the 'dev' branch. This PR targets '${{ github.base_ref }}'."
+          exit 1
+
+  check-references:
+    name: No Claude/Anthropic references
+    runs-on: ubuntu-latest
+    needs: guard
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check PR title and body
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if echo "$PR_TITLE $PR_BODY" | grep -iE 'claude|anthropic'; then
+            echo "ERROR: PR contains a reference to Claude or Anthropic. Remove it before merging."
+            exit 1
+          fi
+
+      - name: Check commit messages
+        run: |
+          if git log origin/dev..HEAD --format="%B" | grep -iE 'claude|anthropic'; then
+            echo "ERROR: A commit message contains a reference to Claude or Anthropic."
+            exit 1
+          fi
+
+  ci:
+    name: Typecheck, lint, test, build
+    runs-on: ubuntu-latest
+    needs: check-references
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kairizon
+          POSTGRES_PASSWORD: kairizon
+          POSTGRES_DB: kairizon_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://kairizon:kairizon@localhost:5432/kairizon_test
+      NEXTAUTH_SECRET: ci-secret-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: placeholder
+      GOOGLE_CLIENT_SECRET: placeholder
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: "587"
+      SMTP_USER: test@example.com
+      SMTP_PASS: placeholder
+      SMTP_FROM: "Kairizon <test@example.com>"
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Build
+        run: npm run build
+
+      - name: Security audit
+        run: npm audit --audit-level=high
+
+  auto-merge:
+    name: Auto-merge on success
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Enable auto-merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge --squash --auto "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
