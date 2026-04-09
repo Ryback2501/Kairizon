@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const config: NextConfig = {
+/** @type {import('next').NextConfig} */
+const config = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images-na.ssl-images-amazon.com" },
@@ -9,7 +8,9 @@ const config: NextConfig = {
       { protocol: "https", hostname: "images-amazon.com" },
     ],
   },
-  serverExternalPackages: ["node-cron", "nodemailer"],
+  experimental: {
+    serverComponentsExternalPackages: ["node-cron", "nodemailer"],
+  },
 };
 
 export default config;
