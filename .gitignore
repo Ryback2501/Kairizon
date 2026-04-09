@@ -47,5 +47,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# SQLite
+prisma/*.db
+prisma/*.db-journal
+
 # Docker
 .dockerignore
