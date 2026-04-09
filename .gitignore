@@ -19,8 +19,6 @@ build/
 # Keep .env.example committed
 !.env.example
 
-# Prisma
-prisma/migrations/**/migration_lock.toml
 
 # Testing
 coverage/
