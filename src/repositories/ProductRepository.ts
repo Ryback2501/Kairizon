@@ -38,6 +38,10 @@ export class ProductRepository implements IProductRepository {
     return db.product.update({ where: { id }, data: { trackStock } });
   }
 
+  async updateIncludeSecondHand(id: string, includeSecondHand: boolean): Promise<Product> {
+    return db.product.update({ where: { id }, data: { includeSecondHand } });
+  }
+
   async updatePriceAndStock(id: string, currentPrice: number | null, inStock: boolean): Promise<void> {
     await db.product.update({ where: { id }, data: { currentPrice, inStock, lastChecked: new Date() } });
   }
