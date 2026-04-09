@@ -21,6 +21,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   );
   const [savingTarget, setSavingTarget] = useState(false);
   const [togglingStock, setTogglingStock] = useState(false);
+  const [togglingSecondHand, setTogglingSecondHand] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function saveTarget() {
@@ -51,6 +52,20 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
       onUpdated(updated);
     }
     setTogglingStock(false);
+  }
+
+  async function toggleSecondHand(checked: boolean) {
+    setTogglingSecondHand(true);
+    const res = await fetch(`/api/products/${product.id}/second-hand`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ includeSecondHand: checked }),
+    });
+    if (res.ok) {
+      const updated = await res.json() as Product;
+      onUpdated(updated);
+    }
+    setTogglingSecondHand(false);
   }
 
   async function handleDelete() {
@@ -99,7 +114,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-brand-gray">
           {product.currentPrice !== null ? (
             <span className="font-semibold text-brand-charcoal text-sm">
-              ${product.currentPrice.toFixed(2)}
+              {product.currentPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
             </span>
           ) : (
             <span>No price data</span>
@@ -145,7 +160,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               className="text-xs text-brand-gray hover:text-brand-charcoal transition-colors"
             >
               {product.targetPrice !== null
-                ? `Alert below $${product.targetPrice.toFixed(2)} · Edit`
+                ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })} · Edit`
                 : "Set target price"}
             </button>
           )}
@@ -156,6 +171,14 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             onChange={toggleStockAlert}
             disabled={togglingStock}
             label="Notify when back in stock"
+          />
+
+          {/* Second-hand toggle */}
+          <Toggle
+            checked={product.includeSecondHand}
+            onChange={toggleSecondHand}
+            disabled={togglingSecondHand}
+            label="Include second-hand"
           />
         </div>
       </div>

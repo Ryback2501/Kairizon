@@ -15,6 +15,7 @@ export interface IProductRepository {
   }): Promise<Product>;
   updateTargetPrice(id: string, targetPrice: number | null): Promise<Product>;
   updateTrackStock(id: string, trackStock: boolean): Promise<Product>;
+  updateIncludeSecondHand(id: string, includeSecondHand: boolean): Promise<Product>;
   updatePriceAndStock(id: string, currentPrice: number | null, inStock: boolean): Promise<void>;
   setNotified(id: string, notified: boolean): Promise<void>;
   setStockNotified(id: string, stockNotified: boolean, inStock: boolean): Promise<void>;

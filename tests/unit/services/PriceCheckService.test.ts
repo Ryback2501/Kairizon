@@ -18,6 +18,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     inStock: true,
     trackStock: false,
     stockNotified: false,
+    includeSecondHand: false,
     createdAt: new Date(),
     ...overrides,
   };
@@ -48,6 +49,7 @@ function makeMocks() {
     create: jest.fn(),
     updateTargetPrice: jest.fn(),
     updateTrackStock: jest.fn(),
+    updateIncludeSecondHand: jest.fn(),
     delete: jest.fn(),
   };
 
