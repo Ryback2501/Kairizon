@@ -3,22 +3,8 @@ import { ProductRepository } from "@/repositories/ProductRepository";
 
 const prisma = new PrismaClient();
 
-// Seed a test user once before all tests
-let testUserId: string;
-
-beforeAll(async () => {
-  const user = await prisma.user.create({
-    data: {
-      email: `test-${Date.now()}@example.com`,
-      name: "Test User",
-    },
-  });
-  testUserId = user.id;
-});
-
 afterAll(async () => {
-  await prisma.product.deleteMany({ where: { userId: testUserId } });
-  await prisma.user.delete({ where: { id: testUserId } });
+  await prisma.product.deleteMany({ where: { asin: "B00TESTINT1" } });
   await prisma.$disconnect();
 });
 
@@ -28,7 +14,6 @@ describe("ProductRepository", () => {
 
   it("creates a product", async () => {
     const product = await repo.create({
-      userId: testUserId,
       asin: "B00TESTINT1",
       title: "Integration Test Product",
       image: null,
@@ -42,21 +27,27 @@ describe("ProductRepository", () => {
     productId = product.id;
   });
 
-  it("finds products by userId", async () => {
-    const products = await repo.findByUserId(testUserId);
+  it("finds all products", async () => {
+    const products = await repo.findAll();
     expect(products.length).toBeGreaterThan(0);
     expect(products.some((p) => p.asin === "B00TESTINT1")).toBe(true);
   });
 
-  it("finds product by user and ASIN", async () => {
-    const product = await repo.findByUserAndAsin(testUserId, "B00TESTINT1");
+  it("finds product by ASIN", async () => {
+    const product = await repo.findByAsin("B00TESTINT1");
     expect(product).not.toBeNull();
     expect(product!.id).toBe(productId);
   });
 
   it("returns null for non-existent ASIN", async () => {
-    const product = await repo.findByUserAndAsin(testUserId, "BXXXXXXXX");
+    const product = await repo.findByAsin("BXXXXXXXX");
     expect(product).toBeNull();
+  });
+
+  it("finds product by id", async () => {
+    const product = await repo.findById(productId);
+    expect(product).not.toBeNull();
+    expect(product!.asin).toBe("B00TESTINT1");
   });
 
   it("updates target price", async () => {
@@ -69,14 +60,12 @@ describe("ProductRepository", () => {
     const products = await repo.findAllWithTargets();
     const found = products.find((p) => p.id === productId);
     expect(found).toBeDefined();
-    expect(found!.user).toHaveProperty("email");
     expect(found!.targetPrice).not.toBeNull();
   });
 
   it("updates price and stock", async () => {
     await repo.updatePriceAndStock(productId, 44.99, true);
-    const products = await repo.findByUserId(testUserId);
-    const product = products.find((p) => p.id === productId);
+    const product = await repo.findById(productId);
     expect(product?.currentPrice).toBe(44.99);
     expect(product?.inStock).toBe(true);
     expect(product?.lastChecked).not.toBeNull();
@@ -84,15 +73,13 @@ describe("ProductRepository", () => {
 
   it("sets notified flag", async () => {
     await repo.setNotified(productId, true);
-    const products = await repo.findByUserId(testUserId);
-    const product = products.find((p) => p.id === productId);
+    const product = await repo.findById(productId);
     expect(product?.notified).toBe(true);
   });
 
   it("sets stockNotified flag and inStock", async () => {
     await repo.setStockNotified(productId, true, false);
-    const products = await repo.findByUserId(testUserId);
-    const product = products.find((p) => p.id === productId);
+    const product = await repo.findById(productId);
     expect(product?.stockNotified).toBe(true);
     expect(product?.inStock).toBe(false);
   });
@@ -104,7 +91,7 @@ describe("ProductRepository", () => {
 
   it("deletes a product", async () => {
     await repo.delete(productId);
-    const product = await repo.findByUserAndAsin(testUserId, "B00TESTINT1");
+    const product = await repo.findByAsin("B00TESTINT1");
     expect(product).toBeNull();
   });
 });
