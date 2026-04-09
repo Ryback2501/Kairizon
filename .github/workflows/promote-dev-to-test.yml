@@ -1,0 +1,145 @@
+name: Promote dev to test
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  full-suite:
+    name: Full test suite (unit + integration + E2E)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kairizon
+          POSTGRES_PASSWORD: kairizon
+          POSTGRES_DB: kairizon_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://kairizon:kairizon@localhost:5432/kairizon_test
+      NEXTAUTH_SECRET: ci-secret-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: placeholder
+      GOOGLE_CLIENT_SECRET: placeholder
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: "587"
+      SMTP_USER: test@example.com
+      SMTP_PASS: placeholder
+      SMTP_FROM: "Kairizon <test@example.com>"
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: Build
+        run: npm run build
+
+      - name: Start app server
+        run: node dist/server.js &
+
+      - name: Wait for app to be ready
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report-promote-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 7
+
+  promote:
+    name: Open or update PR dev → test
+    runs-on: ubuntu-latest
+    needs: full-suite
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create or update promotion PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list --base test --head dev --state open --json number --jq '.[0].number')
+          if [ -n "$EXISTING" ]; then
+            echo "Promotion PR #$EXISTING already exists — enabling auto-merge"
+            gh pr merge --squash --auto "$EXISTING" --repo "${{ github.repository }}"
+          else
+            PR=$(gh pr create \
+              --base test --head dev \
+              --title "chore(ci): promote dev to test" \
+              --body "Automated promotion from \`dev\` to \`test\`. All tests passed on dev.")
+            echo "Created promotion PR: $PR"
+            PR_NUMBER=$(echo "$PR" | grep -oE '[0-9]+$')
+            gh pr merge --squash --auto "$PR_NUMBER" --repo "${{ github.repository }}"
+          fi
+
+  auto-fix:
+    name: Auto-fix on test failure
+    runs-on: ubuntu-latest
+    needs: full-suite
+    if: failure()
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Open bug issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "CI failure on dev → test promotion (run ${{ github.run_id }})" \
+            --label "bug" \
+            --body "The promotion workflow failed on run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).
+
+          **Branch:** dev
+          **Triggered by:** ${{ github.event_name }}
+
+          Please investigate and fix the failing tests."

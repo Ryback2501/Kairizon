@@ -1,0 +1,81 @@
+name: Tag and release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  release:
+    name: Create tag and GitHub Release
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'Release v')
+
+    permissions:
+      contents: write
+
+    env:
+      DATABASE_URL: postgresql://build:build@localhost:5432/build
+      NEXTAUTH_SECRET: build-secret-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: placeholder
+      GOOGLE_CLIENT_SECRET: placeholder
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: "587"
+      SMTP_USER: build@example.com
+      SMTP_PASS: placeholder
+      SMTP_FROM: "Kairizon <build@example.com>"
+      NODE_ENV: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Read version from package.json
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build
+        run: npm run build
+
+      - name: Package artifact
+        run: |
+          mkdir -p artifacts
+          zip -r artifacts/kairizon-v${{ steps.version.outputs.version }}.zip \
+            .next/ \
+            dist/ \
+            public/ \
+            prisma/schema.prisma \
+            prisma/migrations/ \
+            package.json \
+            package-lock.json \
+            --exclude "*.map"
+
+      - name: Create git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version.outputs.version }}"
+          git push origin "v${{ steps.version.outputs.version }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "$PR_BODY" > /tmp/release_notes.md
+          gh release create "v${{ steps.version.outputs.version }}" \
+            --title "v${{ steps.version.outputs.version }}" \
+            --notes-file /tmp/release_notes.md \
+            artifacts/kairizon-v${{ steps.version.outputs.version }}.zip
