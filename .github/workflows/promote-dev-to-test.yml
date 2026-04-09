@@ -54,7 +54,7 @@ jobs:
         run: npx prisma generate
 
       - name: Run database migrations
-        run: npx prisma migrate deploy
+        run: npx prisma db push --force-reset
 
       - name: Unit tests
         run: npm run test:unit
