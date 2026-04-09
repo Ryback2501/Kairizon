@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "ts-node --project tsconfig.server.json server.ts",
+    "dev": "ts-node -r tsconfig-paths/register --project tsconfig.server.json server.ts",
     "build": "next build && tsc --project tsconfig.server.json",
     "start": "node dist/server.js",
     "lint": "next lint",
@@ -43,6 +43,7 @@
     "tailwindcss": "^3.4.14",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.6.3"
   }
 }
