@@ -111,7 +111,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           </Button>
         </div>
 
-        {/* Row: current price · target price · out-of-stock badge */}
+        {/* Row: current price · target price label/input · out-of-stock badge */}
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-brand-gray">
           {product.currentPrice !== null ? (
             <span className="font-semibold text-brand-charcoal text-sm">
@@ -122,41 +122,21 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           )}
 
           {editingTarget ? (
-            <div className="flex items-center gap-2">
-              <Input
-                value={targetInput}
-                onChange={(e) => setTargetInput(e.target.value)}
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="Target price"
-                className="w-28 py-1 text-xs"
-              />
-              <Button size="sm" loading={savingTarget} onClick={saveTarget}>
-                Save
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  setEditingTarget(false);
-                  setTargetInput(product.targetPrice?.toString() ?? "");
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
+            <Input
+              value={targetInput}
+              onChange={(e) => setTargetInput(e.target.value)}
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="Target price"
+              className="w-28 py-1 text-xs"
+            />
           ) : (
-            <div className="flex items-center gap-2">
-              {product.targetPrice !== null && (
-                <span className="text-xs text-brand-gray">
-                  Alert below {product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-                </span>
-              )}
-              <Button size="sm" onClick={() => setEditingTarget(true)}>
-                {product.targetPrice !== null ? "Edit" : "Set target price"}
-              </Button>
-            </div>
+            product.targetPrice !== null && (
+              <span className="text-xs text-brand-gray">
+                Alert below {product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+              </span>
+            )
           )}
 
           {!product.inStock && (
@@ -183,6 +163,31 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             />
           </div>
         )}
+
+        {/* Row: action buttons — always at the bottom */}
+        <div className="mt-3 flex items-center gap-2">
+          {editingTarget ? (
+            <>
+              <Button size="sm" loading={savingTarget} onClick={saveTarget}>
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setEditingTarget(false);
+                  setTargetInput(product.targetPrice?.toString() ?? "");
+                }}
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button size="sm" onClick={() => setEditingTarget(true)}>
+              {product.targetPrice !== null ? "Edit" : "Set target price"}
+            </Button>
+          )}
+        </div>
       </div>
     </Card>
   );
