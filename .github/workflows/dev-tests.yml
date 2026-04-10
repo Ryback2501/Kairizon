@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Trigger promote-dev-to-test workflow
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh workflow run promote-dev-to-test.yml \
             --repo "${{ github.repository }}" \

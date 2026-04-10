@@ -29,7 +29,6 @@ jobs:
       contents: write
     steps:
       - name: Enable auto-merge
-        continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: gh pr merge --squash --auto "${{ github.event.pull_request.number }}" --repo "${{ github.repository }}"
