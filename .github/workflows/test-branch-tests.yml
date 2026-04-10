@@ -1,8 +1,7 @@
 name: Test Branch Tests
 
 on:
-  push:
-    branches: [test]
+  workflow_dispatch:
 
 jobs:
   full-suite:
