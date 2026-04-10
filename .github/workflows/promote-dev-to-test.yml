@@ -85,23 +85,16 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create or update promotion PR
+      - name: Merge dev into test
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          EXISTING=$(gh pr list --base test --head dev --state open --json number --jq '.[0].number')
-          if [ -n "$EXISTING" ]; then
-            echo "Promotion PR #$EXISTING already exists — enabling auto-merge"
-            gh pr merge --squash --auto "$EXISTING" --repo "${{ github.repository }}"
-          else
-            PR=$(gh pr create \
-              --base test --head dev \
-              --title "chore(ci): promote dev to test" \
-              --body "Automated promotion from \`dev\` to \`test\`. All tests passed on dev.")
-            echo "Created promotion PR: $PR"
-            PR_NUMBER=$(echo "$PR" | grep -oE '[0-9]+$')
-            gh pr merge --squash --auto "$PR_NUMBER" --repo "${{ github.repository }}"
-          fi
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git fetch origin test
+          git checkout test
+          git merge origin/dev --no-edit -m "chore(ci): promote dev to test"
+          git push origin test
 
   auto-fix:
     name: Auto-fix on test failure

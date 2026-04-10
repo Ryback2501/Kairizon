@@ -1,5 +1,4 @@
 export interface PriceAlertParams {
-  toEmail: string;
   productTitle: string;
   productUrl: string;
   currentPrice: number;
@@ -7,7 +6,6 @@ export interface PriceAlertParams {
 }
 
 export interface StockAlertParams {
-  toEmail: string;
   productTitle: string;
   productUrl: string;
 }
