@@ -137,7 +137,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               </Button>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
                   setEditingTarget(false);
                   setTargetInput(product.targetPrice?.toString() ?? "");
@@ -147,14 +147,16 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               </Button>
             </div>
           ) : (
-            <button
-              onClick={() => setEditingTarget(true)}
-              className="text-xs text-brand-gray hover:text-brand-charcoal transition-colors"
-            >
-              {product.targetPrice !== null
-                ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })} · Edit`
-                : "Set target price"}
-            </button>
+            <div className="flex items-center gap-2">
+              {product.targetPrice !== null && (
+                <span className="text-xs text-brand-gray">
+                  Alert below {product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                </span>
+              )}
+              <Button size="sm" onClick={() => setEditingTarget(true)}>
+                {product.targetPrice !== null ? "Edit" : "Set target price"}
+              </Button>
+            </div>
           )}
 
           {!product.inStock && (
@@ -164,21 +166,23 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           )}
         </div>
 
-        {/* Row: toggles */}
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          <Toggle
-            checked={product.trackStock}
-            onChange={toggleStockAlert}
-            disabled={togglingStock}
-            label="Notify when back in stock"
-          />
-          <Toggle
-            checked={product.includeSecondHand}
-            onChange={toggleSecondHand}
-            disabled={togglingSecondHand}
-            label="Include second-hand"
-          />
-        </div>
+        {/* Row: toggles — only visible while editing */}
+        {editingTarget && (
+          <div className="mt-3 flex flex-wrap items-center gap-4">
+            <Toggle
+              checked={product.trackStock}
+              onChange={toggleStockAlert}
+              disabled={togglingStock}
+              label="Notify when back in stock"
+            />
+            <Toggle
+              checked={product.includeSecondHand}
+              onChange={toggleSecondHand}
+              disabled={togglingSecondHand}
+              label="Include second-hand"
+            />
+          </div>
+        )}
       </div>
     </Card>
   );
