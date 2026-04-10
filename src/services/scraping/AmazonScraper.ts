@@ -23,7 +23,7 @@ const OUT_OF_STOCK_PATTERNS = [
 ];
 
 export class AmazonScraper implements IScraper {
-  async scrape(url: string): Promise<ScrapeResult | null> {
+  async scrape(url: string, includeSecondHand = false): Promise<ScrapeResult | null> {
     let html: string;
 
     try {
@@ -77,7 +77,20 @@ export class AmazonScraper implements IScraper {
       $(".a-price-whole").first().text().trim() ||
       "";
 
-    const currentPrice = parsePrice(priceText);
+    const newPrice = parsePrice(priceText);
+
+    let currentPrice = newPrice;
+    if (includeSecondHand) {
+      const usedPriceText =
+        $("#usedBuySection .a-price .a-offscreen").first().text().trim() ||
+        $(".a-button-text.a-color-price").first().text().trim() ||
+        $('span[id*="used-price"]').first().text().trim() ||
+        "";
+      const usedPrice = parsePrice(usedPriceText);
+      if (usedPrice !== null && (newPrice === null || usedPrice < newPrice)) {
+        currentPrice = usedPrice;
+      }
+    }
 
     const availabilityText = $("#availability").text().trim().toLowerCase();
     const inStock =
