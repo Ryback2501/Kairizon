@@ -2,12 +2,11 @@ import type { IScraper } from "@/services/scraping/IScraper";
 import type { INotificationService } from "@/services/notification/INotificationService";
 import type { IProductRepository } from "@/repositories/IProductRepository";
 import { PriceCheckService } from "@/services/price-check/PriceCheckService";
-import type { ProductWithUser } from "@/types";
+import type { Product } from "@prisma/client";
 
-function makeProduct(overrides: Partial<ProductWithUser> = {}): ProductWithUser {
+function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
     id: "prod-1",
-    userId: "user-1",
     asin: "B00TEST1234",
     title: "Test Product",
     image: null,
@@ -19,8 +18,8 @@ function makeProduct(overrides: Partial<ProductWithUser> = {}): ProductWithUser 
     inStock: true,
     trackStock: false,
     stockNotified: false,
+    includeSecondHand: false,
     createdAt: new Date(),
-    user: { email: "user@example.com", name: "Test User" },
     ...overrides,
   };
 }
@@ -44,11 +43,13 @@ function makeMocks() {
     updatePriceAndStock: jest.fn().mockResolvedValue(undefined),
     setNotified: jest.fn().mockResolvedValue(undefined),
     setStockNotified: jest.fn().mockResolvedValue(undefined),
-    findByUserId: jest.fn(),
+    findAll: jest.fn(),
+    findById: jest.fn(),
+    findByAsin: jest.fn(),
     create: jest.fn(),
-    findByUserAndAsin: jest.fn(),
     updateTargetPrice: jest.fn(),
     updateTrackStock: jest.fn(),
+    updateIncludeSecondHand: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -116,7 +117,7 @@ describe("PriceCheckService", () => {
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
 
     expect(notifier.sendStockAlert).toHaveBeenCalledWith(
-      expect.objectContaining({ toEmail: "user@example.com" })
+      expect.objectContaining({ productTitle: "Test Product" })
     );
     expect(repo.setStockNotified).toHaveBeenCalledWith("prod-1", true, true);
   });

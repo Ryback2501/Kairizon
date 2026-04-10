@@ -10,7 +10,7 @@ export class EmailNotificationService implements INotificationService {
     const transporter = createTransporter();
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
-      to: params.toEmail,
+      to: process.env.SMTP_USER,
       subject: `Price drop: ${params.productTitle}`,
       html: `
         <p>Good news! The price for <strong>${params.productTitle}</strong> has dropped to
@@ -25,7 +25,7 @@ export class EmailNotificationService implements INotificationService {
     const transporter = createTransporter();
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
-      to: params.toEmail,
+      to: process.env.SMTP_USER,
       subject: `Back in stock: ${params.productTitle}`,
       html: `
         <p><strong>${params.productTitle}</strong> is back in stock!</p>

@@ -9,23 +9,8 @@ jobs:
     name: Full test suite (unit + integration + E2E)
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: kairizon
-          POSTGRES_PASSWORD: kairizon
-          POSTGRES_DB: kairizon_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
-      DATABASE_URL: postgresql://kairizon:kairizon@localhost:5432/kairizon_test
+      DATABASE_URL: file:./test.db
       NEXTAUTH_SECRET: ci-secret-placeholder
       NEXTAUTH_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: placeholder
@@ -100,23 +85,16 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create or update promotion PR
+      - name: Merge dev into test
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          EXISTING=$(gh pr list --base test --head dev --state open --json number --jq '.[0].number')
-          if [ -n "$EXISTING" ]; then
-            echo "Promotion PR #$EXISTING already exists — enabling auto-merge"
-            gh pr merge --squash --auto "$EXISTING" --repo "${{ github.repository }}"
-          else
-            PR=$(gh pr create \
-              --base test --head dev \
-              --title "chore(ci): promote dev to test" \
-              --body "Automated promotion from \`dev\` to \`test\`. All tests passed on dev.")
-            echo "Created promotion PR: $PR"
-            PR_NUMBER=$(echo "$PR" | grep -oE '[0-9]+$')
-            gh pr merge --squash --auto "$PR_NUMBER" --repo "${{ github.repository }}"
-          fi
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git fetch origin test
+          git checkout test
+          git merge origin/dev --no-edit -m "chore(ci): promote dev to test"
+          git push origin test
 
   auto-fix:
     name: Auto-fix on test failure

@@ -90,7 +90,22 @@ export class AmazonScraper implements IScraper {
 }
 
 function parsePrice(text: string): number | null {
-  const cleaned = text.replace(/[^0-9.,]/g, "").replace(",", "");
-  const value = parseFloat(cleaned);
+  // Strip everything except digits, commas, and dots
+  const raw = text.replace(/[^0-9.,]/g, "");
+  if (!raw) return null;
+
+  let normalized: string;
+  const lastComma = raw.lastIndexOf(",");
+  const lastDot = raw.lastIndexOf(".");
+
+  if (lastComma > lastDot) {
+    // European format: 1.234,56 or 49,99 — comma is decimal separator
+    normalized = raw.replace(/\./g, "").replace(",", ".");
+  } else {
+    // US format: 1,234.56 or 49.99 — dot is decimal separator
+    normalized = raw.replace(/,/g, "");
+  }
+
+  const value = parseFloat(normalized);
   return isNaN(value) ? null : value;
 }

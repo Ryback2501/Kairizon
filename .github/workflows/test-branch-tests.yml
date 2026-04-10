@@ -9,23 +9,8 @@ jobs:
     name: Full test suite (unit + integration + E2E)
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: kairizon
-          POSTGRES_PASSWORD: kairizon
-          POSTGRES_DB: kairizon_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     env:
-      DATABASE_URL: postgresql://kairizon:kairizon@localhost:5432/kairizon_test
+      DATABASE_URL: file:./test.db
       NEXTAUTH_SECRET: ci-secret-placeholder
       NEXTAUTH_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: placeholder
