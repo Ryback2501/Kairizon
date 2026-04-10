@@ -22,12 +22,9 @@ export class PriceCheckService implements IPriceCheckService {
 
     await this.repo.updatePriceAndStock(product.id, result.currentPrice, result.inStock);
 
-    const email = process.env.SMTP_USER;
-    if (!email) return;
-
     // Back in stock
     if (result.inStock && !product.inStock && product.trackStock && !product.stockNotified) {
-      await this.notifier.sendStockAlert({ toEmail: email, productTitle: product.title, productUrl: product.url });
+      await this.notifier.sendStockAlert({ productTitle: product.title, productUrl: product.url });
       await this.repo.setStockNotified(product.id, true, true);
       return;
     }
@@ -45,7 +42,7 @@ export class PriceCheckService implements IPriceCheckService {
 
     // Price alert
     if (result.inStock && result.currentPrice !== null && product.targetPrice !== null && result.currentPrice <= product.targetPrice && !product.notified) {
-      await this.notifier.sendPriceAlert({ toEmail: email, productTitle: product.title, productUrl: product.url, currentPrice: result.currentPrice, targetPrice: product.targetPrice });
+      await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice: result.currentPrice, targetPrice: product.targetPrice });
       await this.repo.setNotified(product.id, true);
       return;
     }
