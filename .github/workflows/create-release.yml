@@ -1,0 +1,85 @@
+name: Create release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    name: Verify, merge to main, and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      DATABASE_URL: file:./test.db
+      NEXTAUTH_SECRET: ci-secret-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: placeholder
+      GOOGLE_CLIENT_SECRET: placeholder
+      SMTP_HOST: smtp.example.com
+      SMTP_PORT: "587"
+      SMTP_USER: test@example.com
+      SMTP_PASS: placeholder
+      SMTP_FROM: "Kairizon <test@example.com>"
+      NODE_ENV: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Verify tagged commit is on test branch
+        run: |
+          git fetch origin test
+          if ! git merge-base --is-ancestor ${{ github.sha }} origin/test; then
+            echo "ERROR: Tag ${{ github.ref_name }} points to a commit that is not on the test branch."
+            exit 1
+          fi
+          echo "Verified: ${{ github.ref_name }} is on test branch."
+
+      - name: Merge tagged commit into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          git merge ${{ github.sha }} --no-ff -m "release: ${{ github.ref_name }}"
+          git push origin main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build
+        run: npm run build
+
+      - name: Package artifact
+        run: |
+          zip -r kairizon-${{ github.ref_name }}.zip \
+            .next/ \
+            dist/ \
+            public/ \
+            prisma/schema.prisma \
+            prisma/migrations/ \
+            package.json \
+            package-lock.json \
+            --exclude "*.map"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "Kairizon - ${{ github.ref_name }}" \
+            --generate-notes \
+            kairizon-${{ github.ref_name }}.zip
