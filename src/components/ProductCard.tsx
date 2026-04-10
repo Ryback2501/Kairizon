@@ -111,6 +111,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           </Button>
         </div>
 
+        {/* Row: current price · target price · out-of-stock badge */}
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-brand-gray">
           {product.currentPrice !== null ? (
             <span className="font-semibold text-brand-charcoal text-sm">
@@ -120,15 +121,6 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             <span>No price data</span>
           )}
 
-          {!product.inStock && (
-            <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
-              Out of stock
-            </span>
-          )}
-        </div>
-
-        <div className="mt-3 flex flex-wrap items-center gap-4">
-          {/* Target price */}
           {editingTarget ? (
             <div className="flex items-center gap-2">
               <Input
@@ -165,15 +157,21 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             </button>
           )}
 
-          {/* Stock alert toggle */}
+          {!product.inStock && (
+            <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
+              Out of stock
+            </span>
+          )}
+        </div>
+
+        {/* Row: toggles */}
+        <div className="mt-3 flex flex-wrap items-center gap-4">
           <Toggle
             checked={product.trackStock}
             onChange={toggleStockAlert}
             disabled={togglingStock}
             label="Notify when back in stock"
           />
-
-          {/* Second-hand toggle */}
           <Toggle
             checked={product.includeSecondHand}
             onChange={toggleSecondHand}
