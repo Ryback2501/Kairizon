@@ -18,7 +18,8 @@ model Product {
   lastChecked   DateTime?
   notified      Boolean   @default(false)
   inStock       Boolean   @default(true)
-  trackStock    Boolean   @default(false)
-  stockNotified Boolean   @default(false)
-  createdAt     DateTime  @default(now())
+  trackStock          Boolean   @default(false)
+  stockNotified       Boolean   @default(false)
+  includeSecondHand   Boolean   @default(false)
+  createdAt           DateTime  @default(now())
 }
