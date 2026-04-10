@@ -17,7 +17,7 @@ export class PriceCheckService implements IPriceCheckService {
   }
 
   private async checkProduct(product: Product): Promise<void> {
-    const result = await this.scraper.scrape(product.url);
+    const result = await this.scraper.scrape(product.url, product.includeSecondHand);
     if (!result) return;
 
     await this.repo.updatePriceAndStock(product.id, result.currentPrice, result.inStock);
