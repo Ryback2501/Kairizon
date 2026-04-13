@@ -10,13 +10,13 @@ interface ToggleProps {
 export function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
   // Three distinct visual states:
   //   disabled  → bg-black/10 (light, transparent — matches old unchecked look)
-  //   unchecked → bg-gray-300 (visible mid-gray, clearly interactive but off)
+  //   unchecked → bg-gray-400 (visible mid-gray, clearly interactive but off)
   //   checked   → bg-brand-charcoal (dark)
   const trackColor = disabled
     ? "bg-black/10 cursor-not-allowed"
     : checked
     ? "bg-brand-charcoal"
-    : "bg-gray-300";
+    : "bg-gray-400";
 
   return (
     <label className={`flex items-center gap-2 select-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
