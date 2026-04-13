@@ -1,20 +1,7 @@
-import axios from "axios";
-import * as cheerio from "cheerio";
+import { chromium } from "playwright";
 import { extractAsin, buildScrapeUrl } from "@/lib/amazon";
 import type { IScraper } from "./IScraper";
 import type { ScrapeResult, Seller } from "@/types";
-
-const USER_AGENTS = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
-];
-
-function randomUserAgent(): string {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-}
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -24,17 +11,8 @@ export function randomDelay(): Promise<void> {
   return delay(2000 + Math.random() * 3000);
 }
 
-function buildHeaders() {
-  return {
-    "User-Agent": randomUserAgent(),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-    "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
-    "Accept-Encoding": "gzip, deflate, br",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1",
-    "Cache-Control": "max-age=0",
-  };
-}
+const SECOND_HAND_PATTERNS =
+  /used|refurbished|collectible|renewed|like new|very good|good|acceptable|usado|reacondicionado|como nuevo|muy bueno|bueno|aceptable/i;
 
 const OUT_OF_STOCK_PATTERNS = [
   /currently unavailable/i,
@@ -45,164 +23,197 @@ const OUT_OF_STOCK_PATTERNS = [
   /agotado/i,
 ];
 
-const SECOND_HAND_PATTERNS =
-  /used|refurbished|collectible|renewed|like new|very good|good|acceptable|usado|reacondicionado|como nuevo|muy bueno|bueno|aceptable/i;
-
-function isCaptcha(html: string): boolean {
-  return html.includes("captchacharacters") || html.includes("api-services-support");
-}
-
-async function fetchHtml(url: string): Promise<string | null> {
-  try {
-    const { data } = await axios.get<string>(url, {
-      headers: buildHeaders(),
-      timeout: 15_000,
-      maxRedirects: 5,
-    });
-    if (isCaptcha(data)) {
-      console.warn("[AmazonScraper] CAPTCHA at:", url);
-      return null;
-    }
-    return data;
-  } catch (err) {
-    console.warn("[AmazonScraper] Request failed for", url, "—", (err as Error).message);
-    return null;
-  }
-}
-
 export class AmazonScraper implements IScraper {
   async scrape(url: string): Promise<ScrapeResult | null> {
-    // The AOD URL (?aod=1&th=1) is used for the product page request as instructed.
-    // It reliably returns title, image and availability server-side.
     const scrapeUrl = buildScrapeUrl(url);
-    const html = await fetchHtml(scrapeUrl);
-    if (!html) return null;
-
-    const $ = cheerio.load(html);
-
-    const asin = extractAsin(url) ?? ($('input[name="ASIN"]').val() as string | undefined);
+    const asin = extractAsin(url);
     if (!asin) {
       console.warn("[AmazonScraper] Could not extract ASIN from:", url);
       return null;
     }
 
-    const title =
-      $("#productTitle").text().trim() ||
-      $("#title").text().trim() ||
-      $('h1[class*="title"]').first().text().trim() ||
-      "";
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const context = await browser.newContext({
+        userAgent:
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        locale: "es-ES",
+        extraHTTPHeaders: {
+          "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+        },
+      });
 
-    if (!title) {
-      console.warn("[AmazonScraper] Could not extract title for ASIN:", asin);
-      return null;
+      const page = await context.newPage();
+
+      try {
+        // networkidle waits for JavaScript to render the AOD panel and price widgets
+        await page.goto(scrapeUrl, { waitUntil: "networkidle", timeout: 45_000 });
+      } catch (err) {
+        console.warn("[AmazonScraper] Navigation failed:", (err as Error).message);
+        return null;
+      }
+
+      // Detect CAPTCHA
+      const bodyText = await page.locator("body").textContent({ timeout: 5_000 }).catch(() => "");
+      if (bodyText?.includes("captchacharacters") || bodyText?.includes("Type the characters")) {
+        console.warn("[AmazonScraper] CAPTCHA detected for:", scrapeUrl);
+        return null;
+      }
+
+      // Extract title
+      const title = await page
+        .locator("#productTitle, #aod-asin-title-text, h1")
+        .first()
+        .textContent({ timeout: 5_000 })
+        .catch(() => "")
+        .then((t) => t?.trim() ?? "");
+
+      if (!title) {
+        console.warn("[AmazonScraper] Could not extract title for ASIN:", asin);
+        return null;
+      }
+
+      // Extract image
+      const image = await page
+        .locator("#landingImage, #imgBlkFront, img#main-image, #aod-asin-image-id")
+        .first()
+        .getAttribute("src")
+        .catch(() => null);
+
+      // Extract availability
+      const availabilityText = await page
+        .locator("#availability")
+        .textContent({ timeout: 3_000 })
+        .catch(() => "");
+      const availabilityLower = (availabilityText ?? "").trim().toLowerCase();
+
+      // Extract sellers from the AOD panel (already rendered by networkidle)
+      let sellers: Seller[] = [];
+      const aodPanelPresent = await page
+        .locator("#aod-offer-list, #aod-pinned-offer")
+        .first()
+        .isVisible({ timeout: 3_000 })
+        .catch(() => false);
+
+      if (aodPanelPresent) {
+        // Shim __name so compiled page.evaluate callbacks work across all bundlers
+        await page.evaluate("window.__name = window.__name || function(f) { return f; }");
+        sellers = await extractSellers(page);
+      }
+
+      // Buy Box fallback
+      if (sellers.length === 0) {
+        console.warn("[AmazonScraper] AOD panel not found for ASIN:", asin, "— using Buy Box fallback");
+        const buyBoxPrice = await extractBuyBoxPrice(page);
+        if (buyBoxPrice !== null) {
+          sellers = [{ name: "Featured Seller", price: buyBoxPrice, shipping: 0, isSecondHand: false }];
+        }
+      }
+
+      const inStock =
+        availabilityLower === ""
+          ? sellers.length > 0
+          : !OUT_OF_STOCK_PATTERNS.some((p) => p.test(availabilityLower));
+
+      console.info(
+        `[AmazonScraper] ASIN ${asin}: "${title}", ${sellers.length} seller(s), inStock=${inStock}`
+      );
+
+      return { asin, title, image: image ?? null, inStock, sellers };
+    } finally {
+      await browser.close();
     }
-
-    const image =
-      $("#landingImage").attr("src") ||
-      $("#imgBlkFront").attr("src") ||
-      $('img[data-old-hires]').first().attr("data-old-hires") ||
-      $('img#main-image').attr("src") ||
-      null;
-
-    // Buy Box price — used as fallback seller if the offer listing is unavailable
-    const buyBoxPriceText =
-      $(".priceToPay .a-offscreen").first().text().trim() ||
-      $(".a-price .a-offscreen").first().text().trim() ||
-      $("#priceblock_ourprice").text().trim() ||
-      $("#priceblock_dealprice").text().trim() ||
-      "";
-    const buyBoxPrice = parsePrice(buyBoxPriceText);
-
-    const availabilityText = $("#availability").text().trim().toLowerCase();
-    const inStock =
-      availabilityText === ""
-        ? buyBoxPrice !== null
-        : !OUT_OF_STOCK_PATTERNS.some((p) => p.test(availabilityText));
-
-    // The AOD offer list is JavaScript-rendered and not present in the initial HTML.
-    // We fetch the offer listing page separately — it is fully server-side rendered.
-    const origin = (() => { try { return new URL(url).origin; } catch { return "https://www.amazon.es"; } })();
-    const sellers = await fetchOfferListingSellers(origin, asin, buyBoxPrice);
-
-    return { asin, title, image: image ?? null, inStock, sellers };
   }
 }
 
-/**
- * Fetches /gp/offer-listing/{ASIN} and parses all sellers from it.
- * This page is server-side rendered and reliably contains the full seller list.
- * Falls back to a single "Featured Seller" entry from the Buy Box price if blocked.
- */
-async function fetchOfferListingSellers(
-  origin: string,
-  asin: string,
-  buyBoxPrice: number | null
-): Promise<Seller[]> {
-  const offersUrl = `${origin}/gp/offer-listing/${asin}`;
-  const html = await fetchHtml(offersUrl);
-  if (!html) return makeFallbackSellers(buyBoxPrice);
+type PlaywrightPage = Awaited<ReturnType<Awaited<ReturnType<typeof chromium.launch>>["newContext"]>>["newPage"] extends () => Promise<infer P> ? P : never;
 
-  const $ = cheerio.load(html);
-  const sellers: Seller[] = [];
+async function extractSellers(page: PlaywrightPage): Promise<Seller[]> {
+  return page.evaluate((secondHandPattern: string) => {
+    const re = new RegExp(secondHandPattern, "i");
+    const sellers: Array<{ name: string; price: number; shipping: number; isSecondHand: boolean }> = [];
 
-  $(".olpOffer").each((_, el) => {
-    const priceText =
-      $(el).find(".olpOfferPrice").text().trim() ||
-      $(el).find(".a-price .a-offscreen").first().text().trim();
-    const price = parsePrice(priceText);
-    if (price === null) return;
+    const parsePrice = (text: string): number | null => {
+      const raw = text.replace(/[^0-9.,]/g, "");
+      if (!raw) return null;
+      const lastComma = raw.lastIndexOf(",");
+      const lastDot = raw.lastIndexOf(".");
+      const normalized =
+        lastComma > lastDot
+          ? raw.replace(/\./g, "").replace(",", ".")
+          : raw.replace(/,/g, "");
+      const v = parseFloat(normalized);
+      return isNaN(v) ? null : v;
+    };
 
-    const shippingInfo = $(el).find(".olpShippingInfo").text().toLowerCase();
-    const shippingText = $(el).find(".olpShippingPrice").text().trim();
-    const shipping =
-      shippingInfo.includes("free") ||
-      shippingInfo.includes("gratis") ||
-      shippingInfo.includes("envío gratis")
-        ? 0
-        : (parsePrice(shippingText) ?? 0);
+    const extractFromOffer = (el: Element) => {
+      // Price — Amazon AOD uses apex price widget with this accessibility label
+      const priceEl =
+        el.querySelector("span.aok-offscreen.apex-pricetopay-accessibility-label") ??
+        el.querySelector(".a-price .a-offscreen");
+      const price = parsePrice(priceEl?.textContent ?? "");
+      if (price === null) return;
 
-    const sellerAnchor = $(el).find(".olpSellerName a");
-    const name =
-      sellerAnchor.text().trim() ||
-      $(el).find(".olpSellerName").text().trim() ||
-      "Unknown Seller";
+      // Shipping — check for a dedicated shipping section; default to free
+      const shippingSection = el.querySelector(
+        "[id*='price-shipping'], .aod-offer-price-shipping, [id*='shipping-message']"
+      );
+      const shippingRaw = (shippingSection?.textContent ?? "").toLowerCase();
+      const shipping =
+        !shippingSection ||
+        shippingRaw.includes("free") ||
+        shippingRaw.includes("gratis") ||
+        shippingRaw.includes("envío gratis") ||
+        shippingRaw.trim() === ""
+          ? 0
+          : (parsePrice(shippingRaw) ?? 0);
 
-    const conditionText = $(el).find(".olpCondition").text().trim();
-    const isSecondHand = SECOND_HAND_PATTERNS.test(conditionText);
+      // Seller name — from the soldBy section's anchor link
+      const soldByLink = el.querySelector(
+        "#sellerProfileTriggerId, [id='aod-offer-soldBy'] a, [id*='soldBy'] a, [id*='sold-by'] a"
+      );
+      const name = soldByLink?.textContent?.trim() ?? "";
+      if (!name) return;
 
-    sellers.push({ name: name.trim(), price, shipping, isSecondHand });
-  });
+      // Condition — from the offer heading (avoid broad h5 which also matches the product title)
+      const conditionEl = el.querySelector(
+        "#aod-offer-heading span, [id*='offer-heading'] span"
+      );
+      const isSecondHand = re.test(conditionEl?.textContent ?? "");
 
-  if (sellers.length > 0) {
-    console.info(`[AmazonScraper] Found ${sellers.length} seller(s) for ASIN ${asin}`);
+      sellers.push({ name, price, shipping, isSecondHand });
+    };
+
+    // Pinned offer (Buy Box winner shown at top of AOD panel)
+    const pinned = document.querySelector("#aod-pinned-offer");
+    if (pinned) extractFromOffer(pinned);
+
+    // All other offers — Amazon reuses id="aod-offer" for every offer block
+    document.querySelectorAll("[id='aod-offer']").forEach((el) => extractFromOffer(el));
+
     return sellers;
-  }
-
-  console.warn("[AmazonScraper] No sellers parsed from offer listing for ASIN:", asin);
-  return makeFallbackSellers(buyBoxPrice);
+  }, SECOND_HAND_PATTERNS.source);
 }
 
-function makeFallbackSellers(buyBoxPrice: number | null): Seller[] {
-  if (buyBoxPrice === null) return [];
-  return [{ name: "Featured Seller", price: buyBoxPrice, shipping: 0, isSecondHand: false }];
-}
+async function extractBuyBoxPrice(page: PlaywrightPage): Promise<number | null> {
+  const priceText = await page
+    .locator(
+      "span.aok-offscreen.apex-pricetopay-accessibility-label, .priceToPay .a-offscreen, .a-price .a-offscreen, #priceblock_ourprice, #priceblock_dealprice"
+    )
+    .first()
+    .textContent({ timeout: 3_000 })
+    .catch(() => "");
 
-function parsePrice(text: string): number | null {
-  const raw = text.replace(/[^0-9.,]/g, "");
+  const raw = (priceText ?? "").replace(/[^0-9.,]/g, "");
   if (!raw) return null;
 
-  let normalized: string;
   const lastComma = raw.lastIndexOf(",");
   const lastDot = raw.lastIndexOf(".");
+  const normalized =
+    lastComma > lastDot
+      ? raw.replace(/\./g, "").replace(",", ".")
+      : raw.replace(/,/g, "");
 
-  if (lastComma > lastDot) {
-    // European format: 1.234,56 or 49,99
-    normalized = raw.replace(/\./g, "").replace(",", ".");
-  } else {
-    // US format: 1,234.56 or 49.99
-    normalized = raw.replace(/,/g, "");
-  }
-
-  const value = parseFloat(normalized);
-  return isNaN(value) ? null : value;
+  const v = parseFloat(normalized);
+  return isNaN(v) ? null : v;
 }
