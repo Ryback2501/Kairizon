@@ -3,6 +3,7 @@ import type { IScraper } from "@/services/scraping/IScraper";
 import type { INotificationService } from "@/services/notification/INotificationService";
 import type { IPriceCheckService } from "./IPriceCheckService";
 import type { Product } from "@prisma/client";
+import { randomDelay } from "@/services/scraping/AmazonScraper";
 
 export class PriceCheckService implements IPriceCheckService {
   constructor(
@@ -13,7 +14,12 @@ export class PriceCheckService implements IPriceCheckService {
 
   async runPriceCheck(): Promise<void> {
     const products = await this.repo.findAllWithTargets();
-    await Promise.allSettled(products.map((p) => this.checkProduct(p)));
+    for (const product of products) {
+      await this.checkProduct(product).catch((err: unknown) => {
+        console.error(`[PriceCheckService] Failed to check product ${product.id}:`, err);
+      });
+      if (products.length > 1) await randomDelay();
+    }
   }
 
   private async checkProduct(product: Product): Promise<void> {

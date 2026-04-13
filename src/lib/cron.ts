@@ -11,11 +11,11 @@ export function startPriceCheckCron(_cron: typeof cron): void {
     new EmailNotificationService()
   );
 
-  _cron.schedule("*/30 * * * *", () => {
+  _cron.schedule("0 */4 * * *", () => {
     service.runPriceCheck().catch((err: unknown) => {
       console.error("[cron] Price check failed:", err);
     });
   });
 
-  console.log("[cron] Price check scheduled — every 30 minutes");
+  console.log("[cron] Price check scheduled — every 4 hours");
 }
