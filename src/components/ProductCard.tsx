@@ -191,16 +191,21 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               if (sellers.length === 0) return null;
               return (
                 <div className="mt-3">
-                  <p className="text-xs font-semibold text-brand-charcoal mb-1.5">Sellers</p>
-                  <div className="flex flex-col gap-1.5">
+                  {/* Header row */}
+                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center mb-1 px-1">
+                    <span />
+                    <span className="text-xs font-semibold text-brand-charcoal">Seller</span>
+                    <span className="text-xs font-semibold text-brand-charcoal text-right">Price</span>
+                    <span className="text-xs font-semibold text-brand-charcoal text-right">Shipping</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
                     {sellers.map((seller) => {
-                      const total = seller.price + seller.shipping;
                       const isExcluded = excluded.includes(seller.name);
                       const isToggling = togglingSellerName === seller.name;
                       return (
                         <label
                           key={seller.name}
-                          className="flex items-center gap-2 text-xs cursor-pointer select-none"
+                          className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center px-1 py-0.5 rounded cursor-pointer select-none hover:bg-brand-subtle"
                         >
                           <input
                             type="checkbox"
@@ -209,20 +214,20 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                             onChange={(e) => toggleSeller(seller.name, !e.target.checked)}
                             className="accent-brand-charcoal"
                           />
-                          <span className={isExcluded ? "text-brand-gray line-through" : "text-brand-charcoal"}>
+                          <span className={`text-xs truncate ${isExcluded ? "text-brand-gray line-through" : "text-brand-charcoal"}`}>
                             {seller.name}
+                            {seller.isSecondHand && (
+                              <span className="ml-1 text-amber-600 font-medium">(used)</span>
+                            )}
                           </span>
-                          {seller.isSecondHand && (
-                            <span className="text-amber-600 font-medium">(used)</span>
-                          )}
-                          <span className="ml-auto font-semibold text-brand-charcoal">
-                            {total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          <span className={`text-xs text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
+                            {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
                           </span>
-                          {seller.shipping > 0 && (
-                            <span className="text-brand-gray">
-                              ({seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })} + {seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })})
-                            </span>
-                          )}
+                          <span className={`text-xs text-right ${isExcluded ? "text-brand-gray" : "text-brand-gray"}`}>
+                            {seller.shipping === 0
+                              ? "Free"
+                              : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          </span>
                         </label>
                       );
                     })}
