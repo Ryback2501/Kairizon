@@ -2,7 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { extractAsin } from "@/lib/amazon";
 import type { IScraper } from "./IScraper";
-import type { ScrapeResult } from "@/types";
+import type { ScrapeResult, Seller } from "@/types";
 
 const USER_AGENTS = [
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -43,8 +43,10 @@ const OUT_OF_STOCK_PATTERNS = [
   /this item cannot be shipped/i,
 ];
 
+const SECOND_HAND_PATTERNS = /used|refurbished|collectible|renewed|like new|very good|good|acceptable/i;
+
 export class AmazonScraper implements IScraper {
-  async scrape(url: string, includeSecondHand = false): Promise<ScrapeResult | null> {
+  async scrape(url: string): Promise<ScrapeResult | null> {
     let html: string;
 
     try {
@@ -90,6 +92,7 @@ export class AmazonScraper implements IScraper {
       $('img#main-image').attr("src") ||
       null;
 
+    // Main page price — used for inStock detection and as fallback seller
     const priceText =
       $(".priceToPay .a-offscreen").first().text().trim() ||
       $(".a-price .a-offscreen").first().text().trim() ||
@@ -97,34 +100,85 @@ export class AmazonScraper implements IScraper {
       $("#priceblock_dealprice").text().trim() ||
       $(".a-price-whole").first().text().trim() ||
       "";
-
-    const newPrice = parsePrice(priceText);
-
-    let currentPrice = newPrice;
-    if (includeSecondHand) {
-      const usedPriceText =
-        $("#usedBuySection .a-price .a-offscreen").first().text().trim() ||
-        $(".a-button-text.a-color-price").first().text().trim() ||
-        $('span[id*="used-price"]').first().text().trim() ||
-        "";
-      const usedPrice = parsePrice(usedPriceText);
-      if (usedPrice !== null && (newPrice === null || usedPrice < newPrice)) {
-        currentPrice = usedPrice;
-      }
-    }
+    const mainPagePrice = parsePrice(priceText);
 
     const availabilityText = $("#availability").text().trim().toLowerCase();
     const inStock =
       availabilityText === ""
-        ? currentPrice !== null
+        ? mainPagePrice !== null
         : !OUT_OF_STOCK_PATTERNS.some((p) => p.test(availabilityText));
 
-    return { asin, title, image: image ?? null, currentPrice, inStock };
+    // Scrape all sellers from the offers listing page
+    const baseUrl = (() => {
+      try { return new URL(url).origin; } catch { return "https://www.amazon.es"; }
+    })();
+    const sellers = await this.scrapeOffers(baseUrl, asin, mainPagePrice);
+
+    return { asin, title, image: image ?? null, inStock, sellers };
+  }
+
+  private async scrapeOffers(
+    baseUrl: string,
+    asin: string,
+    fallbackPrice: number | null
+  ): Promise<Seller[]> {
+    const offersUrl = `${baseUrl}/gp/offer-listing/${asin}`;
+    let html: string;
+
+    try {
+      const response = await axios.get(offersUrl, {
+        headers: buildHeaders(),
+        timeout: 15_000,
+        maxRedirects: 5,
+      });
+      html = response.data as string;
+    } catch {
+      return makeFallbackSellers(fallbackPrice);
+    }
+
+    if (html.includes("captchacharacters") || html.includes("api-services-support")) {
+      console.warn("[AmazonScraper] CAPTCHA on offers page for ASIN:", asin);
+      return makeFallbackSellers(fallbackPrice);
+    }
+
+    const $ = cheerio.load(html);
+    const sellers: Seller[] = [];
+
+    $(".olpOffer").each((_, el) => {
+      const priceText = $(el).find(".olpOfferPrice").text().trim();
+      const price = parsePrice(priceText);
+      if (price === null) return;
+
+      const shippingInfo = $(el).find(".olpShippingInfo").text().trim().toLowerCase();
+      const shippingText = $(el).find(".olpShippingPrice").text().trim();
+      const shipping =
+        shippingInfo.includes("free") || shippingInfo.includes("gratis")
+          ? 0
+          : (parsePrice(shippingText) ?? 0);
+
+      const sellerAnchor = $(el).find(".olpSellerName a");
+      const name =
+        sellerAnchor.text().trim() ||
+        $(el).find(".olpSellerName").text().trim() ||
+        "Unknown Seller";
+
+      const conditionText = $(el).find(".olpCondition").text().trim();
+      const isSecondHand = SECOND_HAND_PATTERNS.test(conditionText);
+
+      sellers.push({ name: name.trim(), price, shipping, isSecondHand });
+    });
+
+    if (sellers.length > 0) return sellers;
+    return makeFallbackSellers(fallbackPrice);
   }
 }
 
+function makeFallbackSellers(price: number | null): Seller[] {
+  if (price === null) return [];
+  return [{ name: "Featured Seller", price, shipping: 0, isSecondHand: false }];
+}
+
 function parsePrice(text: string): number | null {
-  // Strip everything except digits, commas, and dots
   const raw = text.replace(/[^0-9.,]/g, "");
   if (!raw) return null;
 

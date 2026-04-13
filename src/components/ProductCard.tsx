@@ -7,6 +7,7 @@ import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Toggle } from "./ui/Toggle";
+import type { Seller } from "@/types";
 
 interface ProductCardProps {
   product: Product;
@@ -22,6 +23,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   const [savingTarget, setSavingTarget] = useState(false);
   const [togglingStock, setTogglingStock] = useState(false);
   const [togglingSecondHand, setTogglingSecondHand] = useState(false);
+  const [togglingSellerName, setTogglingSellerName] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   async function saveTarget() {
@@ -66,6 +68,24 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
       onUpdated(updated);
     }
     setTogglingSecondHand(false);
+  }
+
+  async function toggleSeller(sellerName: string, exclude: boolean) {
+    setTogglingSellerName(sellerName);
+    const current: string[] = JSON.parse(product.excludedSellers);
+    const newExcluded = exclude
+      ? Array.from(new Set([...current, sellerName]))
+      : current.filter((n) => n !== sellerName);
+    const res = await fetch(`/api/products/${product.id}/excluded-sellers`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ excludedSellers: newExcluded }),
+    });
+    if (res.ok) {
+      const updated = await res.json() as Product;
+      onUpdated(updated);
+    }
+    setTogglingSellerName(null);
   }
 
   async function handleDelete() {
@@ -148,20 +168,69 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
         {/* Row: toggles — only visible while editing */}
         {editingTarget && (
-          <div className="mt-3 flex flex-wrap items-center gap-4">
-            <Toggle
-              checked={product.trackStock}
-              onChange={toggleStockAlert}
-              disabled={togglingStock}
-              label="Notify when back in stock"
-            />
-            <Toggle
-              checked={product.includeSecondHand}
-              onChange={toggleSecondHand}
-              disabled={togglingSecondHand}
-              label="Include second-hand"
-            />
-          </div>
+          <>
+            <div className="mt-3 flex flex-wrap items-center gap-4">
+              <Toggle
+                checked={product.trackStock}
+                onChange={toggleStockAlert}
+                disabled={togglingStock}
+                label="Notify when back in stock"
+              />
+              <Toggle
+                checked={product.includeSecondHand}
+                onChange={toggleSecondHand}
+                disabled={togglingSecondHand}
+                label="Include second-hand"
+              />
+            </div>
+
+            {/* Seller selection */}
+            {(() => {
+              const sellers: Seller[] = JSON.parse(product.availableSellers);
+              const excluded: string[] = JSON.parse(product.excludedSellers);
+              if (sellers.length === 0) return null;
+              return (
+                <div className="mt-3">
+                  <p className="text-xs font-semibold text-brand-charcoal mb-1.5">Sellers</p>
+                  <div className="flex flex-col gap-1.5">
+                    {sellers.map((seller) => {
+                      const total = seller.price + seller.shipping;
+                      const isExcluded = excluded.includes(seller.name);
+                      const isToggling = togglingSellerName === seller.name;
+                      return (
+                        <label
+                          key={seller.name}
+                          className="flex items-center gap-2 text-xs cursor-pointer select-none"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={!isExcluded}
+                            disabled={isToggling}
+                            onChange={(e) => toggleSeller(seller.name, !e.target.checked)}
+                            className="accent-brand-charcoal"
+                          />
+                          <span className={isExcluded ? "text-brand-gray line-through" : "text-brand-charcoal"}>
+                            {seller.name}
+                          </span>
+                          {seller.isSecondHand && (
+                            <span className="text-amber-600 font-medium">(used)</span>
+                          )}
+                          <span className="ml-auto font-semibold text-brand-charcoal">
+                            {total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          </span>
+                          {seller.shipping > 0 && (
+                            <span className="text-brand-gray">
+                              ({seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })} + {seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })})
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </>
         )}
 
         {/* Row: action buttons — always at the bottom */}

@@ -1,5 +1,6 @@
 import type { Product } from "@prisma/client";
 import type { IProductRepository } from "./IProductRepository";
+import type { Seller } from "@/types";
 import { db } from "@/lib/db";
 
 export class ProductRepository implements IProductRepository {
@@ -26,8 +27,12 @@ export class ProductRepository implements IProductRepository {
     url: string;
     currentPrice: number | null;
     inStock: boolean;
+    sellers?: Seller[];
   }): Promise<Product> {
-    return db.product.create({ data });
+    const { sellers = [], ...rest } = data;
+    return db.product.create({
+      data: { ...rest, availableSellers: JSON.stringify(sellers) },
+    });
   }
 
   async updateTargetPrice(id: string, targetPrice: number | null): Promise<Product> {
@@ -42,8 +47,32 @@ export class ProductRepository implements IProductRepository {
     return db.product.update({ where: { id }, data: { includeSecondHand } });
   }
 
-  async updatePriceAndStock(id: string, currentPrice: number | null, inStock: boolean): Promise<void> {
-    await db.product.update({ where: { id }, data: { currentPrice, inStock, lastChecked: new Date() } });
+  async updatePriceAndStock(
+    id: string,
+    currentPrice: number | null,
+    inStock: boolean,
+    sellers: Seller[]
+  ): Promise<void> {
+    await db.product.update({
+      where: { id },
+      data: {
+        currentPrice,
+        inStock,
+        lastChecked: new Date(),
+        availableSellers: JSON.stringify(sellers),
+      },
+    });
+  }
+
+  async updateExcludedSellers(id: string, excludedSellers: string[]): Promise<Product> {
+    return db.product.update({
+      where: { id },
+      data: { excludedSellers: JSON.stringify(excludedSellers) },
+    });
+  }
+
+  async updateCurrentPrice(id: string, currentPrice: number | null): Promise<Product> {
+    return db.product.update({ where: { id }, data: { currentPrice } });
   }
 
   async setNotified(id: string, notified: boolean): Promise<void> {
