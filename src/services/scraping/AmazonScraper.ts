@@ -168,11 +168,16 @@ async function extractSellers(page: PlaywrightPage): Promise<Seller[]> {
           ? 0
           : (parsePrice(shippingRaw) ?? 0);
 
-      // Seller name — from the soldBy section's anchor link
-      const soldByLink = el.querySelector(
-        "#sellerProfileTriggerId, [id='aod-offer-soldBy'] a, [id*='soldBy'] a, [id*='sold-by'] a"
-      );
-      const name = soldByLink?.textContent?.trim() ?? "";
+      // Seller name — third-party sellers have a profile link; first-party sellers
+      // (e.g. Amazon itself) use a plain span with no anchor.
+      const soldByEl =
+        el.querySelector(
+          "#sellerProfileTriggerId, [id='aod-offer-soldBy'] a, [id*='soldBy'] a, [id*='sold-by'] a"
+        ) ??
+        el.querySelector(
+          "[id='aod-offer-soldBy'] span.a-color-base, [id*='soldBy'] span.a-color-base"
+        );
+      const name = soldByEl?.textContent?.trim() ?? "";
       if (!name) return;
 
       // Condition — from the offer heading (avoid broad h5 which also matches the product title)
