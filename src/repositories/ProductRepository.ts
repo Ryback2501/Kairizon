@@ -28,10 +28,15 @@ export class ProductRepository implements IProductRepository {
     currentPrice: number | null;
     inStock: boolean;
     sellers?: Seller[];
+    excludedSellers?: string[];
   }): Promise<Product> {
-    const { sellers = [], ...rest } = data;
+    const { sellers = [], excludedSellers = [], ...rest } = data;
     return db.product.create({
-      data: { ...rest, availableSellers: JSON.stringify(sellers) },
+      data: {
+        ...rest,
+        availableSellers: JSON.stringify(sellers),
+        excludedSellers: JSON.stringify(excludedSellers),
+      },
     });
   }
 

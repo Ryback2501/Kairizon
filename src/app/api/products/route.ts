@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not fetch product data. Amazon may be blocking the request." }, { status: 422 });
   }
 
-  const currentPrice = computePrice(result.sellers, false, []);
-  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock: result.inStock, sellers: result.sellers });
+  // Second-hand sellers are excluded by default (includeSecondHand defaults to false)
+  const excludedSellers = result.sellers.filter((s) => s.isSecondHand).map((s) => s.name);
+  const currentPrice = computePrice(result.sellers, false, excludedSellers);
+  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock: result.inStock, sellers: result.sellers, excludedSellers });
   return NextResponse.json(product, { status: 201 });
 }

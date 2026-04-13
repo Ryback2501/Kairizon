@@ -14,6 +14,7 @@ export interface IProductRepository {
     currentPrice: number | null;
     inStock: boolean;
     sellers?: Seller[];
+    excludedSellers?: string[];
   }): Promise<Product>;
   updateTargetPrice(id: string, targetPrice: number | null): Promise<Product>;
   updateTrackStock(id: string, trackStock: boolean): Promise<Product>;

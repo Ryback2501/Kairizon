@@ -27,7 +27,20 @@ export class PriceCheckService implements IPriceCheckService {
     const result = await this.scraper.scrape(product.url);
     if (!result) return;
 
-    const excluded: string[] = JSON.parse(product.excludedSellers);
+    let excluded: string[] = JSON.parse(product.excludedSellers);
+
+    // When second-hand is off, auto-exclude any new second-hand sellers that
+    // weren't in the excluded list yet (e.g. appeared after initial scrape).
+    if (!product.includeSecondHand) {
+      const newSecondHand = result.sellers
+        .filter((s) => s.isSecondHand && !excluded.includes(s.name))
+        .map((s) => s.name);
+      if (newSecondHand.length > 0) {
+        excluded = [...excluded, ...newSecondHand];
+        await this.repo.updateExcludedSellers(product.id, excluded);
+      }
+    }
+
     const currentPrice = computePrice(result.sellers, product.includeSecondHand, excluded);
 
     await this.repo.updatePriceAndStock(product.id, currentPrice, result.inStock, result.sellers);
