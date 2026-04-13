@@ -1,7 +1,14 @@
+export type Seller = {
+  name: string;
+  price: number;
+  shipping: number;
+  isSecondHand: boolean;
+};
+
 export type ScrapeResult = {
   title: string;
   image: string | null;
-  currentPrice: number | null;
   asin: string;
   inStock: boolean;
+  sellers: Seller[];
 };

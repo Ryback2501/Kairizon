@@ -3,6 +3,7 @@ import type { INotificationService } from "@/services/notification/INotification
 import type { IProductRepository } from "@/repositories/IProductRepository";
 import { PriceCheckService } from "@/services/price-check/PriceCheckService";
 import type { Product } from "@prisma/client";
+import type { Seller } from "@/types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -19,21 +20,28 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     trackStock: false,
     stockNotified: false,
     includeSecondHand: false,
+    availableSellers: "[]",
+    excludedSellers: "[]",
     createdAt: new Date(),
     ...overrides,
   };
 }
 
 function makeScrapeResult(
-  overrides: Partial<{ currentPrice: number | null; inStock: boolean }> = {}
+  overrides: Partial<{ currentPrice: number | null; inStock: boolean; sellers: Seller[] }> = {}
 ) {
+  const price = overrides.currentPrice ?? 50;
+  const sellers: Seller[] = overrides.sellers ?? (
+    price !== null
+      ? [{ name: "TestSeller", price, shipping: 0, isSecondHand: false }]
+      : []
+  );
   return {
     asin: "B00TEST1234",
     title: "Test Product",
     image: null,
-    currentPrice: 50,
-    inStock: true,
-    ...overrides,
+    sellers,
+    inStock: overrides.inStock ?? true,
   };
 }
 
@@ -50,6 +58,8 @@ function makeMocks() {
     updateTargetPrice: jest.fn(),
     updateTrackStock: jest.fn(),
     updateIncludeSecondHand: jest.fn(),
+    updateExcludedSellers: jest.fn(),
+    updateCurrentPrice: jest.fn(),
     delete: jest.fn(),
   };
 

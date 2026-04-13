@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
 import { AmazonScraper } from "@/services/scraping/AmazonScraper";
 import { isValidAmazonUrl, extractAsin } from "@/lib/amazon";
+import { computePrice } from "@/lib/pricing";
 
 const repo = new ProductRepository();
 const scraper = new AmazonScraper();
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not fetch product data. Amazon may be blocking the request." }, { status: 422 });
   }
 
-  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice: result.currentPrice, inStock: result.inStock });
+  const currentPrice = computePrice(result.sellers, false, []);
+  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock: result.inStock, sellers: result.sellers });
   return NextResponse.json(product, { status: 201 });
 }

@@ -4,6 +4,7 @@ import type { INotificationService } from "@/services/notification/INotification
 import type { IPriceCheckService } from "./IPriceCheckService";
 import type { Product } from "@prisma/client";
 import { randomDelay } from "@/services/scraping/AmazonScraper";
+import { computePrice } from "@/lib/pricing";
 
 export class PriceCheckService implements IPriceCheckService {
   constructor(
@@ -23,10 +24,13 @@ export class PriceCheckService implements IPriceCheckService {
   }
 
   private async checkProduct(product: Product): Promise<void> {
-    const result = await this.scraper.scrape(product.url, product.includeSecondHand);
+    const result = await this.scraper.scrape(product.url);
     if (!result) return;
 
-    await this.repo.updatePriceAndStock(product.id, result.currentPrice, result.inStock);
+    const excluded: string[] = JSON.parse(product.excludedSellers);
+    const currentPrice = computePrice(result.sellers, product.includeSecondHand, excluded);
+
+    await this.repo.updatePriceAndStock(product.id, currentPrice, result.inStock, result.sellers);
 
     // Back in stock
     if (result.inStock && !product.inStock && product.trackStock && !product.stockNotified) {
@@ -47,14 +51,14 @@ export class PriceCheckService implements IPriceCheckService {
     }
 
     // Price alert
-    if (result.inStock && result.currentPrice !== null && product.targetPrice !== null && result.currentPrice <= product.targetPrice && !product.notified) {
-      await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice: result.currentPrice, targetPrice: product.targetPrice });
+    if (result.inStock && currentPrice !== null && product.targetPrice !== null && currentPrice <= product.targetPrice && !product.notified) {
+      await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice, targetPrice: product.targetPrice });
       await this.repo.setNotified(product.id, true);
       return;
     }
 
     // Reset notified when price rises back above target
-    if (product.notified && (result.currentPrice === null || product.targetPrice === null || result.currentPrice > product.targetPrice)) {
+    if (product.notified && (currentPrice === null || product.targetPrice === null || currentPrice > product.targetPrice)) {
       await this.repo.setNotified(product.id, false);
     }
   }

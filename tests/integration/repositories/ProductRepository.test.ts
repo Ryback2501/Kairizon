@@ -64,7 +64,7 @@ describe("ProductRepository", () => {
   });
 
   it("updates price and stock", async () => {
-    await repo.updatePriceAndStock(productId, 44.99, true);
+    await repo.updatePriceAndStock(productId, 44.99, true, []);
     const product = await repo.findById(productId);
     expect(product?.currentPrice).toBe(44.99);
     expect(product?.inStock).toBe(true);

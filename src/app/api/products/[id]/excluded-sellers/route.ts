@@ -14,12 +14,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await req.json() as { includeSecondHand?: unknown };
-  if (typeof body.includeSecondHand !== "boolean") {
-    return NextResponse.json({ error: "includeSecondHand must be a boolean" }, { status: 400 });
+  const body = await req.json() as { excludedSellers?: unknown };
+  if (!Array.isArray(body.excludedSellers) || !body.excludedSellers.every((s) => typeof s === "string")) {
+    return NextResponse.json({ error: "excludedSellers must be a string array" }, { status: 400 });
   }
 
-  const updated = await repo.updateIncludeSecondHand(params.id, body.includeSecondHand);
+  const updated = await repo.updateExcludedSellers(params.id, body.excludedSellers);
 
   const sellers: Seller[] = JSON.parse(updated.availableSellers);
   const excluded: string[] = JSON.parse(updated.excludedSellers);
