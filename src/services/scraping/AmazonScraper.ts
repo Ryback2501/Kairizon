@@ -1,6 +1,6 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { extractAsin } from "@/lib/amazon";
+import { extractAsin, buildScrapeUrl } from "@/lib/amazon";
 import type { IScraper } from "./IScraper";
 import type { ScrapeResult, Seller } from "@/types";
 
@@ -43,14 +43,16 @@ const OUT_OF_STOCK_PATTERNS = [
   /this item cannot be shipped/i,
 ];
 
-const SECOND_HAND_PATTERNS = /used|refurbished|collectible|renewed|like new|very good|good|acceptable/i;
+const SECOND_HAND_PATTERNS = /used|refurbished|collectible|renewed|like new|very good|good|acceptable|usado|reacondicionado/i;
 
 export class AmazonScraper implements IScraper {
   async scrape(url: string): Promise<ScrapeResult | null> {
+    // Use the AOD URL so product info and all seller offers come in one request
+    const scrapeUrl = buildScrapeUrl(url);
     let html: string;
 
     try {
-      const response = await axios.get(url, {
+      const response = await axios.get(scrapeUrl, {
         headers: buildHeaders(),
         timeout: 15_000,
         maxRedirects: 5,
@@ -62,7 +64,7 @@ export class AmazonScraper implements IScraper {
     }
 
     if (html.includes("captchacharacters") || html.includes("api-services-support")) {
-      console.warn("[AmazonScraper] CAPTCHA detected for:", url);
+      console.warn("[AmazonScraper] CAPTCHA detected for:", scrapeUrl);
       return null;
     }
 
@@ -92,90 +94,79 @@ export class AmazonScraper implements IScraper {
       $('img#main-image').attr("src") ||
       null;
 
-    // Main page price — used for inStock detection and as fallback seller
-    const priceText =
-      $(".priceToPay .a-offscreen").first().text().trim() ||
-      $(".a-price .a-offscreen").first().text().trim() ||
-      $("#priceblock_ourprice").text().trim() ||
-      $("#priceblock_dealprice").text().trim() ||
-      $(".a-price-whole").first().text().trim() ||
-      "";
-    const mainPagePrice = parsePrice(priceText);
+    // Parse all sellers from the AOD section
+    const sellers = parseAodSellers($);
 
+    // Availability — use the standard #availability element when present;
+    // fall back to whether any sellers were found
     const availabilityText = $("#availability").text().trim().toLowerCase();
     const inStock =
       availabilityText === ""
-        ? mainPagePrice !== null
+        ? sellers.length > 0
         : !OUT_OF_STOCK_PATTERNS.some((p) => p.test(availabilityText));
 
-    // Scrape all sellers from the offers listing page
-    const baseUrl = (() => {
-      try { return new URL(url).origin; } catch { return "https://www.amazon.es"; }
-    })();
-    const sellers = await this.scrapeOffers(baseUrl, asin, mainPagePrice);
+    // If AOD section was empty (e.g. blocked), fall back to the Buy Box price
+    // so the product still gets a usable price on first scrape
+    if (sellers.length === 0) {
+      const priceText =
+        $(".priceToPay .a-offscreen").first().text().trim() ||
+        $(".a-price .a-offscreen").first().text().trim() ||
+        $("#priceblock_ourprice").text().trim() ||
+        $("#priceblock_dealprice").text().trim() ||
+        "";
+      const fallbackPrice = parsePrice(priceText);
+      if (fallbackPrice !== null) {
+        sellers.push({ name: "Featured Seller", price: fallbackPrice, shipping: 0, isSecondHand: false });
+      }
+    }
 
     return { asin, title, image: image ?? null, inStock, sellers };
   }
-
-  private async scrapeOffers(
-    baseUrl: string,
-    asin: string,
-    fallbackPrice: number | null
-  ): Promise<Seller[]> {
-    const offersUrl = `${baseUrl}/gp/offer-listing/${asin}`;
-    let html: string;
-
-    try {
-      const response = await axios.get(offersUrl, {
-        headers: buildHeaders(),
-        timeout: 15_000,
-        maxRedirects: 5,
-      });
-      html = response.data as string;
-    } catch {
-      return makeFallbackSellers(fallbackPrice);
-    }
-
-    if (html.includes("captchacharacters") || html.includes("api-services-support")) {
-      console.warn("[AmazonScraper] CAPTCHA on offers page for ASIN:", asin);
-      return makeFallbackSellers(fallbackPrice);
-    }
-
-    const $ = cheerio.load(html);
-    const sellers: Seller[] = [];
-
-    $(".olpOffer").each((_, el) => {
-      const priceText = $(el).find(".olpOfferPrice").text().trim();
-      const price = parsePrice(priceText);
-      if (price === null) return;
-
-      const shippingInfo = $(el).find(".olpShippingInfo").text().trim().toLowerCase();
-      const shippingText = $(el).find(".olpShippingPrice").text().trim();
-      const shipping =
-        shippingInfo.includes("free") || shippingInfo.includes("gratis")
-          ? 0
-          : (parsePrice(shippingText) ?? 0);
-
-      const sellerAnchor = $(el).find(".olpSellerName a");
-      const name =
-        sellerAnchor.text().trim() ||
-        $(el).find(".olpSellerName").text().trim() ||
-        "Unknown Seller";
-
-      const conditionText = $(el).find(".olpCondition").text().trim();
-      const isSecondHand = SECOND_HAND_PATTERNS.test(conditionText);
-
-      sellers.push({ name: name.trim(), price, shipping, isSecondHand });
-    });
-
-    if (sellers.length > 0) return sellers;
-    return makeFallbackSellers(fallbackPrice);
-  }
 }
 
-function makeFallbackSellers(price: number | null): Seller[] {
-  if (price === null) return [];
-  return [{ name: "Featured Seller", price, shipping: 0, isSecondHand: false }];
+/**
+ * Parses the AOD (All Offers Display) section of a product page loaded
+ * with ?aod=1. Each offer block has a numeric ID: aod-offer-1, aod-offer-2, …
+ */
+function parseAodSellers($: ReturnType<typeof cheerio.load>): Seller[] {
+  const sellers: Seller[] = [];
+
+  // AOD renders individual offer divs with IDs like "aod-offer-1", "aod-offer-2", …
+  $("[id^='aod-offer-']").each((_, el) => {
+    // Skip the container itself (#aod-offer-list) and pinned offer wrapper
+    const id = $(el).attr("id") ?? "";
+    if (!id.match(/^aod-offer-\d+$/)) return;
+
+    // Price — first .a-offscreen within an .a-price inside this offer
+    const priceText = $(el).find(".a-price .a-offscreen").first().text().trim();
+    const price = parsePrice(priceText);
+    if (price === null) return;
+
+    // Shipping — look for a nested price inside the shipping row; free if text says so
+    const shippingEl = $(el).find("[id*='shipping']");
+    const shippingText = shippingEl.find(".a-offscreen").first().text().trim();
+    const shippingRaw = shippingEl.text().toLowerCase();
+    const shipping =
+      shippingRaw.includes("free") || shippingRaw.includes("gratis") || shippingRaw.includes("envío gratis")
+        ? 0
+        : (parsePrice(shippingText) ?? 0);
+
+    // Seller name — the profile trigger link, or any link in the soldBy section
+    const soldByEl = $(el).find("[id*='soldBy'], [id*='sold-by'], .aod-offer-soldBy");
+    const name =
+      soldByEl.find("a").first().text().trim() ||
+      soldByEl.text().trim() ||
+      "Unknown Seller";
+
+    // Condition — heading or condition element within the offer
+    const conditionText =
+      $(el).find("[id*='condition'], .aod-offer-heading").first().text().trim();
+    const isSecondHand = SECOND_HAND_PATTERNS.test(conditionText);
+
+    if (name) sellers.push({ name: name.trim(), price, shipping, isSecondHand });
+  });
+
+  return sellers;
 }
 
 function parsePrice(text: string): number | null {

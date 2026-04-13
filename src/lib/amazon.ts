@@ -23,3 +23,19 @@ export function isValidAmazonUrl(url: string): boolean {
 export function buildAmazonUrl(asin: string, domain = "amazon.com"): string {
   return `https://www.${domain}/dp/${asin}`;
 }
+
+/**
+ * Builds the AOD (All Offers Display) URL for a product.
+ * The ?aod=1&th=1 parameters instruct Amazon to include all seller
+ * offers in the page response, avoiding a separate offers-listing request.
+ */
+export function buildScrapeUrl(url: string): string {
+  const asin = extractAsin(url);
+  if (!asin) return url;
+  try {
+    const origin = new URL(url).origin;
+    return `${origin}/dp/${asin}?aod=1&th=1`;
+  } catch {
+    return url;
+  }
+}
