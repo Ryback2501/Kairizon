@@ -94,6 +94,11 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     else setDeleting(false);
   }
 
+  // Amazon in the seller list → has stock. No Amazon entry → out of stock.
+  const amazonHasStock = (JSON.parse(product.availableSellers) as Seller[]).some(
+    (s) => /^amazon$/i.test(s.name.trim())
+  );
+
   return (
     <Card className="flex gap-4">
       {product.image && (
@@ -180,7 +185,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <Toggle
                 checked={product.trackStock}
                 onChange={toggleStockAlert}
-                disabled={togglingStock}
+                disabled={togglingStock || amazonHasStock}
                 label="Notify when back in stock"
               />
               <Toggle
