@@ -11,11 +11,23 @@ export function startPriceCheckCron(_cron: typeof cron): void {
     new EmailNotificationService()
   );
 
-  _cron.schedule("0 */4 * * *", () => {
-    service.runPriceCheck().catch((err: unknown) => {
-      console.error("[cron] Price check failed:", err);
-    });
+  let lastFullUpdate: Date | null = null;
+
+  // Startup run — always executes regardless of last update time
+  service.runPriceCheck()
+    .then(() => { lastFullUpdate = new Date(); })
+    .catch((err: unknown) => { console.error("[cron] Startup price check failed:", err); });
+
+  // Scheduled run — every hour on the hour and on the half hour
+  _cron.schedule("0,30 * * * *", () => {
+    if (lastFullUpdate && Date.now() - lastFullUpdate.getTime() < 5 * 60 * 1000) {
+      console.log("[cron] Skipping scheduled run — last update was less than 5 minutes ago");
+      return;
+    }
+    service.runPriceCheck()
+      .then(() => { lastFullUpdate = new Date(); })
+      .catch((err: unknown) => { console.error("[cron] Price check failed:", err); });
   });
 
-  console.log("[cron] Price check scheduled — every 4 hours");
+  console.log("[cron] Price check scheduled — on startup, then every :00 and :30");
 }

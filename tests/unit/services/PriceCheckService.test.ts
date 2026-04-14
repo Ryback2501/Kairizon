@@ -31,9 +31,10 @@ function makeScrapeResult(
   overrides: Partial<{ currentPrice: number | null; inStock: boolean; sellers: Seller[] }> = {}
 ) {
   const price = overrides.currentPrice ?? 50;
+  // Default seller is Amazon — inStock is now derived from Amazon's presence in sellers
   const sellers: Seller[] = overrides.sellers ?? (
     price !== null
-      ? [{ name: "TestSeller", price, shipping: 0, isSecondHand: false }]
+      ? [{ name: "Amazon", price, shipping: 0, isSecondHand: false }]
       : []
   );
   return {
@@ -79,7 +80,7 @@ describe("PriceCheckService", () => {
   it("sends a price alert when price drops to or below target", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ currentPrice: 50, targetPrice: 40, notified: false });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 38, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -93,7 +94,7 @@ describe("PriceCheckService", () => {
   it("does not send price alert if already notified", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ currentPrice: 38, targetPrice: 40, notified: true });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 35, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -104,7 +105,7 @@ describe("PriceCheckService", () => {
   it("resets notified flag when price rises back above target", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ currentPrice: 38, targetPrice: 40, notified: true });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 55, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -121,7 +122,7 @@ describe("PriceCheckService", () => {
       stockNotified: false,
       targetPrice: null,
     });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 50, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -140,7 +141,7 @@ describe("PriceCheckService", () => {
       stockNotified: false,
       targetPrice: null,
     });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 50, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -156,8 +157,9 @@ describe("PriceCheckService", () => {
       stockNotified: false,
       targetPrice: null,
     });
-    repo.findAllWithTargets.mockResolvedValue([product]);
-    scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: null, inStock: false }));
+    repo.findAll.mockResolvedValue([product]);
+    // Empty sellers = Amazon is out of stock (no Amazon entry in the list)
+    scraper.scrape.mockResolvedValue(makeScrapeResult({ sellers: [] }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
 
@@ -167,7 +169,7 @@ describe("PriceCheckService", () => {
 
   it("skips product when scraper returns null", async () => {
     const { repo, scraper, notifier } = makeMocks();
-    repo.findAllWithTargets.mockResolvedValue([makeProduct()]);
+    repo.findAll.mockResolvedValue([makeProduct()]);
     scraper.scrape.mockResolvedValue(null);
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -179,7 +181,7 @@ describe("PriceCheckService", () => {
   it("does not alert when price has no target set", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ targetPrice: null });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 10 }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();

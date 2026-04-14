@@ -14,7 +14,7 @@ export class PriceCheckService implements IPriceCheckService {
   ) {}
 
   async runPriceCheck(): Promise<void> {
-    const products = await this.repo.findAllWithTargets();
+    const products = await this.repo.findAll();
     for (const product of products) {
       await this.checkProduct(product).catch((err: unknown) => {
         console.error(`[PriceCheckService] Failed to check product ${product.id}:`, err);
@@ -43,28 +43,31 @@ export class PriceCheckService implements IPriceCheckService {
 
     const currentPrice = computePrice(result.sellers, product.includeSecondHand, excluded);
 
-    await this.repo.updatePriceAndStock(product.id, currentPrice, result.inStock, result.sellers);
+    // inStock tracks Amazon's availability specifically
+    const amazonInStock = result.sellers.some((s) => /^amazon$/i.test(s.name.trim()));
+
+    await this.repo.updatePriceAndStock(product.id, currentPrice, amazonInStock, result.sellers);
 
     // Back in stock
-    if (result.inStock && !product.inStock && product.trackStock && !product.stockNotified) {
+    if (amazonInStock && !product.inStock && product.trackStock && !product.stockNotified) {
       await this.notifier.sendStockAlert({ productTitle: product.title, productUrl: product.url });
       await this.repo.setStockNotified(product.id, true, true);
       return;
     }
 
     // Went out of stock — reset for future re-alert
-    if (!result.inStock && product.inStock) {
+    if (!amazonInStock && product.inStock) {
       await this.repo.setStockNotified(product.id, false, false);
       return;
     }
 
     // Cycle complete — reset stockNotified
-    if (result.inStock && product.inStock && product.stockNotified) {
+    if (amazonInStock && product.inStock && product.stockNotified) {
       await this.repo.setStockNotified(product.id, false, true);
     }
 
     // Price alert
-    if (result.inStock && currentPrice !== null && product.targetPrice !== null && currentPrice <= product.targetPrice && !product.notified) {
+    if (amazonInStock && currentPrice !== null && product.targetPrice !== null && currentPrice <= product.targetPrice && !product.notified) {
       await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice, targetPrice: product.targetPrice });
       await this.repo.setNotified(product.id, true);
       return;
