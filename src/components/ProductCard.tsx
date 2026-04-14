@@ -198,9 +198,17 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
             {/* Seller selection */}
             {(() => {
+              type DisplaySeller = Seller & { outOfStock?: boolean };
               const sellers: Seller[] = JSON.parse(product.availableSellers);
               const excluded: string[] = JSON.parse(product.excludedSellers);
-              if (sellers.length === 0) return null;
+              const amazonSeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
+              const nonAmazonSellers = sellers
+                .filter((s) => !/^amazon$/i.test(s.name.trim()))
+                .sort((a, b) => (a.price + a.shipping) - (b.price + b.shipping));
+              const displaySellers: DisplaySeller[] = [
+                amazonSeller ?? { name: "Amazon", price: 0, shipping: 0, isSecondHand: false, outOfStock: true },
+                ...nonAmazonSellers,
+              ];
               return (
                 <div className="mt-3">
                   {/* Header row */}
@@ -211,18 +219,19 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                     <span className="text-xs font-semibold text-brand-charcoal text-right">Shipping</span>
                   </div>
                   <div className="flex flex-col gap-1">
-                    {sellers.map((seller) => {
+                    {displaySellers.map((seller) => {
                       const isExcluded = excluded.includes(seller.name);
                       const isToggling = togglingSellerName === seller.name;
+                      const isOutOfStock = !!seller.outOfStock;
                       return (
                         <label
                           key={seller.name}
-                          className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center px-1 py-0.5 rounded cursor-pointer select-none hover:bg-brand-subtle"
+                          className={`grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center px-1 py-0.5 rounded select-none ${isOutOfStock ? "cursor-default" : "cursor-pointer hover:bg-brand-subtle"}`}
                         >
                           <input
                             type="checkbox"
                             checked={!isExcluded}
-                            disabled={isToggling}
+                            disabled={isToggling || isOutOfStock}
                             onChange={(e) => toggleSeller(seller.name, !e.target.checked)}
                             className="accent-brand-charcoal"
                           />
@@ -232,14 +241,20 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                               <span className="ml-1 text-amber-600 font-medium">(used)</span>
                             )}
                           </span>
-                          <span className={`text-xs text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
-                            {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-                          </span>
-                          <span className={`text-xs text-right ${isExcluded ? "text-brand-gray" : "text-brand-gray"}`}>
-                            {seller.shipping === 0
-                              ? "Free"
-                              : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-                          </span>
+                          {isOutOfStock ? (
+                            <span className="col-span-2 text-xs text-right text-red-500 font-medium">Out of stock</span>
+                          ) : (
+                            <>
+                              <span className={`text-xs text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
+                                {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                              </span>
+                              <span className="text-xs text-right text-brand-gray">
+                                {seller.shipping === 0
+                                  ? "Free"
+                                  : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                              </span>
+                            </>
+                          )}
                         </label>
                       );
                     })}

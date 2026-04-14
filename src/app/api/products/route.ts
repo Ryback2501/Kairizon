@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
   // Second-hand sellers are excluded by default (includeSecondHand defaults to false)
   const excludedSellers = result.sellers.filter((s) => s.isSecondHand).map((s) => s.name);
   const currentPrice = computePrice(result.sellers, false, excludedSellers);
-  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock: result.inStock, sellers: result.sellers, excludedSellers });
+  // inStock tracks Amazon's availability specifically
+  const inStock = result.sellers.some((s) => /^amazon$/i.test(s.name.trim()));
+  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock, sellers: result.sellers, excludedSellers });
   return NextResponse.json(product, { status: 201 });
 }
