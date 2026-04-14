@@ -64,23 +64,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
       body: JSON.stringify({ includeSecondHand: checked }),
     });
     if (res.ok) {
-      let updated = await res.json() as Product;
-      // When hiding second-hand sellers, deselect any that were selected
-      if (!checked) {
-        const secondHandNames = sellers
-          .filter((s) => s.isSecondHand)
-          .map((s) => s.name);
-        if (secondHandNames.length > 0) {
-          const currentExcluded: string[] = JSON.parse(product.excludedSellers);
-          const newExcluded = Array.from(new Set([...currentExcluded, ...secondHandNames]));
-          const res2 = await fetch(`/api/products/${product.id}/excluded-sellers`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ excludedSellers: newExcluded }),
-          });
-          if (res2.ok) updated = await res2.json() as Product;
-        }
-      }
+      const updated = await res.json() as Product;
       onUpdated(updated);
     }
     setTogglingSecondHand(false);
