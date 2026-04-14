@@ -1,4 +1,6 @@
 import { createTransporter } from "@/lib/mailer";
+import { isSettingsConfigured } from "@/repositories/IAppSettingsRepository";
+import type { IAppSettingsRepository } from "@/repositories/IAppSettingsRepository";
 import type {
   INotificationService,
   PriceAlertParams,
@@ -6,11 +8,18 @@ import type {
 } from "./INotificationService";
 
 export class EmailNotificationService implements INotificationService {
+  constructor(private readonly settingsRepo: IAppSettingsRepository) {}
+
   async sendPriceAlert(params: PriceAlertParams): Promise<void> {
-    const transporter = createTransporter();
+    const settings = await this.settingsRepo.get();
+    if (!isSettingsConfigured(settings)) {
+      console.warn("[email] SMTP not configured — skipping price alert");
+      return;
+    }
+    const transporter = createTransporter(settings);
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to: process.env.SMTP_USER,
+      from: settings.smtpFrom,
+      to: settings.smtpUser,
       subject: `Price drop: ${params.productTitle}`,
       html: `
         <p>Good news! The price for <strong>${params.productTitle}</strong> has dropped to
@@ -22,10 +31,15 @@ export class EmailNotificationService implements INotificationService {
   }
 
   async sendStockAlert(params: StockAlertParams): Promise<void> {
-    const transporter = createTransporter();
+    const settings = await this.settingsRepo.get();
+    if (!isSettingsConfigured(settings)) {
+      console.warn("[email] SMTP not configured — skipping stock alert");
+      return;
+    }
+    const transporter = createTransporter(settings);
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to: process.env.SMTP_USER,
+      from: settings.smtpFrom,
+      to: settings.smtpUser,
       subject: `Back in stock: ${params.productTitle}`,
       html: `
         <p><strong>${params.productTitle}</strong> is back in stock!</p>

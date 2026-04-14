@@ -54,6 +54,7 @@ export function AddProductForm({ onAdded }: AddProductFormProps) {
         disabled={loading || !url.trim()}
         className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         aria-label="Add product"
+        title="Add product"
       >
         {loading ? (
           <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />

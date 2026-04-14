@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
 import { EmailNotificationService } from "@/services/notification/EmailNotificationService";
 
+import { AppSettingsRepository } from "@/repositories/AppSettingsRepository";
+
 const repo = new ProductRepository();
-const notifier = new EmailNotificationService();
+const notifier = new EmailNotificationService(new AppSettingsRepository());
 
 export async function POST() {
   const products = await repo.findAll();
