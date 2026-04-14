@@ -180,6 +180,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             onClick={handleDelete}
             className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Remove product"
+            title="Remove product"
           >
             {deleting ? (
               <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />
@@ -339,6 +340,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 onClick={saveTarget}
                 className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Save target price"
+                title="Save"
               >
                 {savingTarget ? (
                   <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />
@@ -356,6 +358,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 }}
                 className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
                 aria-label="Cancel editing"
+                title="Cancel"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="18" y1="6" x2="6" y2="18" />
@@ -370,6 +373,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 onClick={() => setEditingTarget(true)}
                 className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
                 aria-label={product.targetPrice !== null ? "Edit target price" : "Set target price"}
+                title={product.targetPrice !== null ? "Edit target price" : "Set target price"}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -387,6 +391,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                       : "bg-brand-charcoal text-white hover:opacity-80"
                   }`}
                   aria-label={product.notified ? "Notified — click to re-enable alerts" : "Not notified — click to suppress alerts"}
+                  title={product.notified ? "Re-enable alerts" : "Suppress alerts"}
                 >
                   {togglingNotified ? (
                     <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />
