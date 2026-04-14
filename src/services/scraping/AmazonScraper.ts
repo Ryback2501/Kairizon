@@ -98,7 +98,18 @@ export class AmazonScraper implements IScraper {
       if (aodPanelPresent) {
         // Shim __name so compiled page.evaluate callbacks work across all bundlers
         await page.evaluate("window.__name = window.__name || function(f) { return f; }");
-        sellers = await extractSellers(page);
+        const rawSellers = await extractSellers(page);
+        // Deduplicate by seller name — Amazon often lists the same seller in both
+        // the pinned offer and the regular offer list. Keep the cheapest total.
+        const seen = new Map<string, Seller>();
+        for (const s of rawSellers) {
+          const key = s.name.toLowerCase();
+          const existing = seen.get(key);
+          if (!existing || s.price + s.shipping < existing.price + existing.shipping) {
+            seen.set(key, s);
+          }
+        }
+        sellers = Array.from(seen.values());
       }
 
       // Buy Box fallback

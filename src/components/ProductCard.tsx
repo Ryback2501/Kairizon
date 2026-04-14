@@ -110,7 +110,17 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   }
 
   // ── Price display logic ──────────────────────────────────────────────────
-  const sellers: Seller[] = JSON.parse(product.availableSellers);
+  // Deduplicate by name (safety net for any legacy data stored with duplicates)
+  const rawSellers: Seller[] = JSON.parse(product.availableSellers);
+  const sellerMap = new Map<string, Seller>();
+  for (const s of rawSellers) {
+    const key = s.name.toLowerCase();
+    const existing = sellerMap.get(key);
+    if (!existing || s.price + s.shipping < existing.price + existing.shipping) {
+      sellerMap.set(key, s);
+    }
+  }
+  const sellers = Array.from(sellerMap.values());
   const excluded: string[] = JSON.parse(product.excludedSellers);
 
   const isAmazonExcluded = excluded.some((e) => /^amazon$/i.test(e.trim()));
