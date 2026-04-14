@@ -110,7 +110,17 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   }
 
   // ── Price display logic ──────────────────────────────────────────────────
-  const sellers: Seller[] = JSON.parse(product.availableSellers);
+  // Deduplicate by name (safety net for any legacy data stored with duplicates)
+  const rawSellers: Seller[] = JSON.parse(product.availableSellers);
+  const sellerMap = new Map<string, Seller>();
+  for (const s of rawSellers) {
+    const key = s.name.toLowerCase();
+    const existing = sellerMap.get(key);
+    if (!existing || s.price + s.shipping < existing.price + existing.shipping) {
+      sellerMap.set(key, s);
+    }
+  }
+  const sellers = Array.from(sellerMap.values());
   const excluded: string[] = JSON.parse(product.excludedSellers);
 
   const isAmazonExcluded = excluded.some((e) => /^amazon$/i.test(e.trim()));
@@ -223,9 +233,9 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           )}
         </div>
 
-        {/* Target price line — input in edit mode, text otherwise */}
-        <div className="mt-1">
-          {editingTarget ? (
+        {/* Info lines — bullet list when not editing, input when editing */}
+        {editingTarget ? (
+          <div className="mt-1">
             <Input
               value={targetInput}
               onChange={(e) => setTargetInput(e.target.value)}
@@ -235,27 +245,23 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               placeholder="Target price"
               className="w-28 py-1 text-xs"
             />
-          ) : (
-            <span className="text-xs text-brand-gray">
+          </div>
+        ) : (
+          <ul className="mt-1 list-disc list-inside flex flex-col gap-0.5">
+            <li className="text-xs text-brand-gray">
               {product.targetPrice !== null
                 ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`
                 : "No price alert"}
-            </span>
-          )}
-        </div>
-
-        {/* Additional info lines — hidden while editing */}
-        {!editingTarget && (showOutOfStock && product.trackStock || otherOptionPrice !== null) && (
-          <div className="mt-0.5 flex flex-col gap-0.5">
+            </li>
             {showOutOfStock && product.trackStock && (
-              <span className="text-xs text-brand-gray">Notify when back in stock</span>
+              <li className="text-xs text-brand-gray">Notify when back in stock</li>
             )}
             {otherOptionPrice !== null && (
-              <span className="text-xs text-brand-gray">
+              <li className="text-xs text-brand-gray">
                 {`Other options from ${otherOptionPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`}
-              </span>
+              </li>
             )}
-          </div>
+          </ul>
         )}
 
         {/* Edit mode — toggles and seller table */}
@@ -277,14 +283,14 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             </div>
 
             {/* Seller table */}
-            <table className="w-full mt-3 text-xs border-collapse">
+            <table className="w-full mt-3 text-xs border-collapse table-fixed">
               <thead>
                 <tr>
                   <th className="pb-1 w-5" />
                   <th className="pb-1 text-left font-semibold text-brand-charcoal">Seller</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Price</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Shipping</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Total</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Price</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Shipping</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Total</th>
                 </tr>
               </thead>
               <tbody>
