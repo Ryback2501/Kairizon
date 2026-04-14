@@ -123,7 +123,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   const sellers = Array.from(sellerMap.values());
   const excluded: string[] = JSON.parse(product.excludedSellers);
 
-  const isAmazonExcluded = excluded.some((e) => /^amazon$/i.test(e.trim()));
+  const isAmazonSelected = !excluded.some((e) => /^amazon$/i.test(e.trim()));
   const amazonSeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
 
   const nonAmazonEligible = sellers
@@ -135,30 +135,39 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     )
     .sort((a, b) => a.price + a.shipping - (b.price + b.shipping));
 
+  // No seller selected when all are excluded
+  const hasAnySelectedSeller = sellers.some(
+    (s) => !excluded.some((e) => e.toLowerCase() === s.name.toLowerCase())
+  );
+  const showNoSellerSelected = !hasAnySelectedSeller;
+
   let mainPriceSeller: Seller | null = null;
   let showOutOfStock = false;
   let otherOptionPrice: number | null = null;
 
-  if (isAmazonExcluded) {
-    mainPriceSeller = nonAmazonEligible[0] ?? null;
-  } else {
-    if (amazonSeller) {
-      mainPriceSeller = amazonSeller;
+  if (!showNoSellerSelected) {
+    if (isAmazonSelected) {
+      if (amazonSeller) {
+        mainPriceSeller = amazonSeller;
+      } else {
+        showOutOfStock = true;
+      }
+      otherOptionPrice =
+        nonAmazonEligible.length > 0
+          ? nonAmazonEligible[0].price + nonAmazonEligible[0].shipping
+          : null;
     } else {
-      showOutOfStock = true;
+      // Amazon not selected — show cheapest non-Amazon eligible seller
+      mainPriceSeller = nonAmazonEligible[0] ?? null;
     }
-    otherOptionPrice =
-      nonAmazonEligible.length > 0
-        ? nonAmazonEligible[0].price + nonAmazonEligible[0].shipping
-        : null;
   }
 
   const mainPrice = mainPriceSeller
     ? mainPriceSeller.price + mainPriceSeller.shipping
     : null;
   const isUsed = mainPriceSeller?.isSecondHand ?? false;
-  // Toggle is enabled only when Amazon is selected (not excluded) and out of stock
-  const amazonHasStock = !isAmazonExcluded && !!amazonSeller;
+  // Stock alert toggle enabled only when Amazon is selected and has no stock
+  const stockAlertEnabled = isAmazonSelected && !amazonSeller;
 
   // ── Seller table data ────────────────────────────────────────────────────
   type DisplaySeller = Seller & { outOfStock?: boolean };
@@ -218,20 +227,22 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
         </div>
 
         {/* Price row */}
-        <div className="mt-2 flex items-center gap-2">
-          {showOutOfStock ? (
-            <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
-              Out of stock
-            </span>
-          ) : mainPrice !== null ? (
-            <span className="font-semibold text-brand-charcoal text-sm flex items-baseline gap-1">
-              {mainPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-              {isUsed && <span className="text-amber-600 font-medium text-xs">(used)</span>}
-            </span>
-          ) : (
-            <span className="text-xs text-brand-gray">No price data</span>
-          )}
-        </div>
+        {!showNoSellerSelected && (
+          <div className="mt-2 flex items-center gap-2">
+            {showOutOfStock ? (
+              <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
+                Out of stock
+              </span>
+            ) : mainPrice !== null ? (
+              <span className="font-semibold text-brand-charcoal text-sm flex items-baseline gap-1">
+                {mainPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                {isUsed && <span className="text-amber-600 font-medium text-xs">(used)</span>}
+              </span>
+            ) : (
+              <span className="text-xs text-brand-gray">No price data</span>
+            )}
+          </div>
+        )}
 
         {/* Info lines — bullet list when not editing, input when editing */}
         {editingTarget ? (
@@ -248,18 +259,24 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           </div>
         ) : (
           <ul className="mt-1 list-disc list-inside flex flex-col gap-0.5">
-            <li className="text-xs text-brand-gray">
-              {product.targetPrice !== null
-                ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`
-                : "No price alert"}
-            </li>
-            {showOutOfStock && product.trackStock && (
-              <li className="text-xs text-brand-gray">Notify when back in stock</li>
-            )}
-            {otherOptionPrice !== null && (
-              <li className="text-xs text-brand-gray">
-                {`Other options from ${otherOptionPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`}
-              </li>
+            {showNoSellerSelected ? (
+              <li className="text-xs text-brand-gray">No seller selected. Edit the item to select sellers.</li>
+            ) : (
+              <>
+                <li className="text-xs text-brand-gray">
+                  {product.targetPrice !== null
+                    ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`
+                    : "No price alert"}
+                </li>
+                {stockAlertEnabled && product.trackStock && (
+                  <li className="text-xs text-brand-gray">Notify when back in stock</li>
+                )}
+                {otherOptionPrice !== null && (
+                  <li className="text-xs text-brand-gray">
+                    {`Other options from ${otherOptionPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`}
+                  </li>
+                )}
+              </>
             )}
           </ul>
         )}
@@ -271,7 +288,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <Toggle
                 checked={product.trackStock}
                 onChange={toggleStockAlert}
-                disabled={togglingStock || amazonHasStock || isAmazonExcluded}
+                disabled={togglingStock || !stockAlertEnabled}
                 label="Notify when back in stock"
               />
               <Toggle
@@ -302,8 +319,8 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                   return (
                     <tr
                       key={seller.name}
-                      className={`select-none rounded ${!isOutOfStock && !isToggling ? "cursor-pointer hover:bg-brand-subtle" : ""}`}
-                      onClick={!isOutOfStock && !isToggling ? () => toggleSeller(seller.name, !isExcluded) : undefined}
+                      className={`select-none rounded ${!isToggling ? "cursor-pointer hover:bg-brand-subtle" : ""}`}
+                      onClick={!isToggling ? () => toggleSeller(seller.name, !isExcluded) : undefined}
                     >
                       <td
                         className="pr-2 py-0.5"
@@ -312,7 +329,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                         <input
                           type="checkbox"
                           checked={!isExcluded}
-                          disabled={isToggling || isOutOfStock}
+                          disabled={isToggling}
                           onChange={(e) => toggleSeller(seller.name, !e.target.checked)}
                           className="accent-brand-charcoal"
                         />

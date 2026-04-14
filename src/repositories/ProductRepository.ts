@@ -29,6 +29,7 @@ export class ProductRepository implements IProductRepository {
     inStock: boolean;
     sellers?: Seller[];
     excludedSellers?: string[];
+    includeSecondHand?: boolean;
   }): Promise<Product> {
     const { sellers = [], excludedSellers = [], ...rest } = data;
     return db.product.create({
