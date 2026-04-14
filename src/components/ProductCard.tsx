@@ -23,6 +23,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   const [togglingStock, setTogglingStock] = useState(false);
   const [togglingSecondHand, setTogglingSecondHand] = useState(false);
   const [togglingSellerName, setTogglingSellerName] = useState<string | null>(null);
+  const [togglingNotified, setTogglingNotified] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   async function saveTarget() {
@@ -87,6 +88,20 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     setTogglingSellerName(null);
   }
 
+  async function toggleNotified() {
+    setTogglingNotified(true);
+    const res = await fetch(`/api/products/${product.id}/notified`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notified: !product.notified }),
+    });
+    if (res.ok) {
+      const updated = await res.json() as Product;
+      onUpdated(updated);
+    }
+    setTogglingNotified(false);
+  }
+
   async function handleDelete() {
     setDeleting(true);
     const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
@@ -94,10 +109,46 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     else setDeleting(false);
   }
 
-  // Amazon in the seller list → has stock. No Amazon entry → out of stock.
-  const amazonHasStock = (JSON.parse(product.availableSellers) as Seller[]).some(
-    (s) => /^amazon$/i.test(s.name.trim())
-  );
+  // ── Price display logic ──────────────────────────────────────────────────
+  const sellers: Seller[] = JSON.parse(product.availableSellers);
+  const excluded: string[] = JSON.parse(product.excludedSellers);
+
+  const isAmazonExcluded = excluded.some((e) => /^amazon$/i.test(e.trim()));
+  const amazonSeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
+
+  const nonAmazonEligible = sellers
+    .filter(
+      (s) =>
+        !/^amazon$/i.test(s.name.trim()) &&
+        !excluded.some((e) => e.toLowerCase() === s.name.toLowerCase()) &&
+        (product.includeSecondHand || !s.isSecondHand)
+    )
+    .sort((a, b) => a.price + a.shipping - (b.price + b.shipping));
+
+  let mainPriceSeller: Seller | null = null;
+  let showOutOfStock = false;
+  let otherOptionPrice: number | null = null;
+
+  if (isAmazonExcluded) {
+    mainPriceSeller = nonAmazonEligible[0] ?? null;
+  } else {
+    if (amazonSeller) {
+      mainPriceSeller = amazonSeller;
+    } else {
+      showOutOfStock = true;
+    }
+    otherOptionPrice =
+      nonAmazonEligible.length > 0
+        ? nonAmazonEligible[0].price + nonAmazonEligible[0].shipping
+        : null;
+  }
+
+  const mainPrice = mainPriceSeller
+    ? mainPriceSeller.price + mainPriceSeller.shipping
+    : null;
+  const isUsed = mainPriceSeller?.isSecondHand ?? false;
+  // Toggle is enabled only when Amazon is selected (not excluded) and out of stock
+  const amazonHasStock = !isAmazonExcluded && !!amazonSeller;
 
   return (
     <Card className="flex gap-4">
@@ -114,6 +165,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
       )}
 
       <div className="flex-1 min-w-0">
+        {/* Title + delete button */}
         <div className="flex items-start justify-between gap-2">
           <a
             href={product.url}
@@ -123,7 +175,6 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           >
             {product.title}
           </a>
-          {/* Delete — circle ghost button, turns red on hover */}
           <button
             disabled={deleting}
             onClick={handleDelete}
@@ -143,16 +194,24 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           </button>
         </div>
 
-        {/* Row: current price · target price label/input · out-of-stock badge */}
-        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-brand-gray">
-          {product.currentPrice !== null ? (
-            <span className="font-semibold text-brand-charcoal text-sm">
-              {product.currentPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+        {/* Price row */}
+        <div className="mt-2 flex items-center gap-2">
+          {showOutOfStock ? (
+            <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
+              Out of stock
+            </span>
+          ) : mainPrice !== null ? (
+            <span className="font-semibold text-brand-charcoal text-sm flex items-baseline gap-1">
+              {mainPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+              {isUsed && <span className="text-amber-600 font-medium text-xs">(used)</span>}
             </span>
           ) : (
-            <span>No price data</span>
+            <span className="text-xs text-brand-gray">No price data</span>
           )}
+        </div>
 
+        {/* Target price line — input in edit mode, text otherwise */}
+        <div className="mt-1">
           {editingTarget ? (
             <Input
               value={targetInput}
@@ -164,28 +223,36 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               className="w-28 py-1 text-xs"
             />
           ) : (
-            product.targetPrice !== null && (
-              <span className="text-xs text-brand-gray">
-                Alert below {product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-              </span>
-            )
-          )}
-
-          {!product.inStock && (
-            <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
-              Out of stock
+            <span className="text-xs text-brand-gray">
+              {product.targetPrice !== null
+                ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`
+                : "No price alert"}
             </span>
           )}
         </div>
 
-        {/* Row: toggles — only visible while editing */}
+        {/* Additional info lines */}
+        {(showOutOfStock && product.trackStock || otherOptionPrice !== null) && (
+          <div className="mt-0.5 flex flex-col gap-0.5">
+            {showOutOfStock && product.trackStock && (
+              <span className="text-xs text-brand-gray">Notify when back in stock</span>
+            )}
+            {otherOptionPrice !== null && (
+              <span className="text-xs text-brand-gray">
+                {`Other options from ${otherOptionPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Edit mode — toggles and seller list */}
         {editingTarget && (
           <>
             <div className="mt-3 flex flex-wrap items-center gap-4">
               <Toggle
                 checked={product.trackStock}
                 onChange={toggleStockAlert}
-                disabled={togglingStock || amazonHasStock}
+                disabled={togglingStock || amazonHasStock || isAmazonExcluded}
                 label="Notify when back in stock"
               />
               <Toggle
@@ -199,19 +266,16 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             {/* Seller selection */}
             {(() => {
               type DisplaySeller = Seller & { outOfStock?: boolean };
-              const sellers: Seller[] = JSON.parse(product.availableSellers);
-              const excluded: string[] = JSON.parse(product.excludedSellers);
-              const amazonSeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
+              const amazonDisplaySeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
               const nonAmazonSellers = sellers
                 .filter((s) => !/^amazon$/i.test(s.name.trim()))
-                .sort((a, b) => (a.price + a.shipping) - (b.price + b.shipping));
+                .sort((a, b) => a.price + a.shipping - (b.price + b.shipping));
               const displaySellers: DisplaySeller[] = [
-                amazonSeller ?? { name: "Amazon", price: 0, shipping: 0, isSecondHand: false, outOfStock: true },
+                amazonDisplaySeller ?? { name: "Amazon", price: 0, shipping: 0, isSecondHand: false, outOfStock: true },
                 ...nonAmazonSellers,
               ];
               return (
                 <div className="mt-3">
-                  {/* Header row */}
                   <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center mb-1 px-1">
                     <span />
                     <span className="text-xs font-semibold text-brand-charcoal">Seller</span>
@@ -265,11 +329,11 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           </>
         )}
 
-        {/* Row: action buttons — always at the bottom */}
+        {/* Action row */}
         <div className="mt-3 flex items-center gap-2">
           {editingTarget ? (
             <>
-              {/* Save — dark filled circle, checkmark */}
+              {/* Save */}
               <button
                 disabled={savingTarget}
                 onClick={saveTarget}
@@ -284,7 +348,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                   </svg>
                 )}
               </button>
-              {/* Cancel — subtle circle, X */}
+              {/* Cancel */}
               <button
                 onClick={() => {
                   setEditingTarget(false);
@@ -300,17 +364,51 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               </button>
             </>
           ) : (
-            /* Edit / Set target price — dark filled circle, pencil */
-            <button
-              onClick={() => setEditingTarget(true)}
-              className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
-              aria-label={product.targetPrice !== null ? "Edit target price" : "Set target price"}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-            </button>
+            <>
+              {/* Edit */}
+              <button
+                onClick={() => setEditingTarget(true)}
+                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
+                aria-label={product.targetPrice !== null ? "Edit target price" : "Set target price"}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
+              {/* Notified toggle — only when a target price is set */}
+              {product.targetPrice !== null && (
+                <button
+                  disabled={togglingNotified}
+                  onClick={toggleNotified}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    product.notified
+                      ? "bg-amber-400 text-white hover:opacity-80"
+                      : "bg-brand-charcoal text-white hover:opacity-80"
+                  }`}
+                  aria-label={product.notified ? "Notified — click to re-enable alerts" : "Not notified — click to suppress alerts"}
+                >
+                  {togglingNotified ? (
+                    <span className="animate-spin h-3.5 w-3.5 border-2 border-current border-t-transparent rounded-full" />
+                  ) : product.notified ? (
+                    /* Bell-off (muted) */
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                      <path d="M18.63 13A17.89 17.89 0 0 1 18 8" />
+                      <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14" />
+                      <path d="M18 8a6 6 0 0 0-9.33-5" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    /* Bell (active) */
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
