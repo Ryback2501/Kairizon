@@ -64,7 +64,23 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
       body: JSON.stringify({ includeSecondHand: checked }),
     });
     if (res.ok) {
-      const updated = await res.json() as Product;
+      let updated = await res.json() as Product;
+      // When hiding second-hand sellers, deselect any that were selected
+      if (!checked) {
+        const secondHandNames = sellers
+          .filter((s) => s.isSecondHand)
+          .map((s) => s.name);
+        if (secondHandNames.length > 0) {
+          const currentExcluded: string[] = JSON.parse(product.excludedSellers);
+          const newExcluded = Array.from(new Set([...currentExcluded, ...secondHandNames]));
+          const res2 = await fetch(`/api/products/${product.id}/excluded-sellers`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ excludedSellers: newExcluded }),
+          });
+          if (res2.ok) updated = await res2.json() as Product;
+        }
+      }
       onUpdated(updated);
     }
     setTogglingSecondHand(false);
@@ -150,6 +166,18 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   // Toggle is enabled only when Amazon is selected (not excluded) and out of stock
   const amazonHasStock = !isAmazonExcluded && !!amazonSeller;
 
+  // ── Seller table data ────────────────────────────────────────────────────
+  type DisplaySeller = Seller & { outOfStock?: boolean };
+  const amazonDisplaySeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
+  const nonAmazonSellers = sellers
+    .filter((s) => !/^amazon$/i.test(s.name.trim()))
+    .filter((s) => product.includeSecondHand || !s.isSecondHand)
+    .sort((a, b) => a.price + a.shipping - (b.price + b.shipping));
+  const displaySellers: DisplaySeller[] = [
+    amazonDisplaySeller ?? { name: "Amazon", price: 0, shipping: 0, isSecondHand: false, outOfStock: true },
+    ...nonAmazonSellers,
+  ];
+
   return (
     <Card className="flex gap-4">
       {product.image && (
@@ -232,8 +260,8 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           )}
         </div>
 
-        {/* Additional info lines */}
-        {(showOutOfStock && product.trackStock || otherOptionPrice !== null) && (
+        {/* Additional info lines — hidden while editing */}
+        {!editingTarget && (showOutOfStock && product.trackStock || otherOptionPrice !== null) && (
           <div className="mt-0.5 flex flex-col gap-0.5">
             {showOutOfStock && product.trackStock && (
               <span className="text-xs text-brand-gray">Notify when back in stock</span>
@@ -246,7 +274,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           </div>
         )}
 
-        {/* Edit mode — toggles and seller list */}
+        {/* Edit mode — toggles and seller table */}
         {editingTarget && (
           <>
             <div className="mt-3 flex flex-wrap items-center gap-4">
@@ -264,69 +292,71 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               />
             </div>
 
-            {/* Seller selection */}
-            {(() => {
-              type DisplaySeller = Seller & { outOfStock?: boolean };
-              const amazonDisplaySeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
-              const nonAmazonSellers = sellers
-                .filter((s) => !/^amazon$/i.test(s.name.trim()))
-                .sort((a, b) => a.price + a.shipping - (b.price + b.shipping));
-              const displaySellers: DisplaySeller[] = [
-                amazonDisplaySeller ?? { name: "Amazon", price: 0, shipping: 0, isSecondHand: false, outOfStock: true },
-                ...nonAmazonSellers,
-              ];
-              return (
-                <div className="mt-3">
-                  <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center mb-1 px-1">
-                    <span />
-                    <span className="text-xs font-semibold text-brand-charcoal">Seller</span>
-                    <span className="text-xs font-semibold text-brand-charcoal text-right">Price</span>
-                    <span className="text-xs font-semibold text-brand-charcoal text-right">Shipping</span>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {displaySellers.map((seller) => {
-                      const isExcluded = excluded.includes(seller.name);
-                      const isToggling = togglingSellerName === seller.name;
-                      const isOutOfStock = !!seller.outOfStock;
-                      return (
-                        <label
-                          key={seller.name}
-                          className={`grid grid-cols-[auto_1fr_auto_auto] gap-x-3 items-center px-1 py-0.5 rounded select-none ${isOutOfStock ? "cursor-default" : "cursor-pointer hover:bg-brand-subtle"}`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={!isExcluded}
-                            disabled={isToggling || isOutOfStock}
-                            onChange={(e) => toggleSeller(seller.name, !e.target.checked)}
-                            className="accent-brand-charcoal"
-                          />
-                          <span className={`text-xs truncate ${isExcluded ? "text-brand-gray line-through" : "text-brand-charcoal"}`}>
-                            {seller.name}
-                            {seller.isSecondHand && (
-                              <span className="ml-1 text-amber-600 font-medium">(used)</span>
-                            )}
-                          </span>
-                          {isOutOfStock ? (
-                            <span className="col-span-2 text-xs text-right text-red-500 font-medium">Out of stock</span>
-                          ) : (
-                            <>
-                              <span className={`text-xs text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
-                                {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-                              </span>
-                              <span className="text-xs text-right text-brand-gray">
-                                {seller.shipping === 0
-                                  ? "Free"
-                                  : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-                              </span>
-                            </>
-                          )}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
+            {/* Seller table */}
+            <table className="w-full mt-3 text-xs border-collapse">
+              <thead>
+                <tr>
+                  <th className="pb-1 w-5" />
+                  <th className="pb-1 text-left font-semibold text-brand-charcoal">Seller</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Price</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Shipping</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displaySellers.map((seller) => {
+                  const isExcluded = excluded.some((e) => e.toLowerCase() === seller.name.toLowerCase());
+                  const isToggling = togglingSellerName === seller.name;
+                  const isOutOfStock = !!seller.outOfStock;
+                  const total = seller.price + seller.shipping;
+                  return (
+                    <tr
+                      key={seller.name}
+                      className={`select-none rounded ${!isOutOfStock && !isToggling ? "cursor-pointer hover:bg-brand-subtle" : ""}`}
+                      onClick={!isOutOfStock && !isToggling ? () => toggleSeller(seller.name, !isExcluded) : undefined}
+                    >
+                      <td
+                        className="pr-2 py-0.5"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!isExcluded}
+                          disabled={isToggling || isOutOfStock}
+                          onChange={(e) => toggleSeller(seller.name, !e.target.checked)}
+                          className="accent-brand-charcoal"
+                        />
+                      </td>
+                      <td className={`py-0.5 ${isExcluded ? "text-brand-gray line-through" : "text-brand-charcoal"}`}>
+                        {seller.name}
+                        {seller.isSecondHand && (
+                          <span className="ml-1 text-amber-600 font-medium">(used)</span>
+                        )}
+                      </td>
+                      {isOutOfStock ? (
+                        <td colSpan={3} className="py-0.5 pl-3 text-center text-red-500 font-medium">
+                          Out of stock
+                        </td>
+                      ) : (
+                        <>
+                          <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
+                            {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          </td>
+                          <td className="py-0.5 pl-3 text-right text-brand-gray">
+                            {seller.shipping === 0
+                              ? "Free"
+                              : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          </td>
+                          <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
+                            {total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </>
         )}
 
