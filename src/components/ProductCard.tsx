@@ -287,14 +287,14 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             </div>
 
             {/* Seller table */}
-            <table className="w-full mt-3 text-xs border-collapse">
+            <table className="w-full mt-3 text-xs border-collapse table-fixed">
               <thead>
                 <tr>
                   <th className="pb-1 w-5" />
                   <th className="pb-1 text-left font-semibold text-brand-charcoal">Seller</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Price</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Shipping</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3">Total</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Price</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Shipping</th>
+                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Total</th>
                 </tr>
               </thead>
               <tbody>
