@@ -27,7 +27,13 @@ export class PriceCheckService implements IPriceCheckService {
     const result = await this.scraper.scrape(product.url);
     if (!result) return;
 
-    let excluded: string[] = JSON.parse(product.excludedSellers);
+    let excluded: string[];
+    try {
+      excluded = JSON.parse(product.excludedSellers);
+    } catch {
+      console.error(`[PriceCheckService] Failed to parse excludedSellers for product ${product.id}`);
+      excluded = [];
+    }
 
     // When second-hand is off, auto-exclude any new second-hand sellers that
     // weren't in the excluded list yet (e.g. appeared after initial scrape).
