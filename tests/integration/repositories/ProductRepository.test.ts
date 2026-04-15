@@ -89,6 +89,40 @@ describe("ProductRepository", () => {
     expect(updated.trackStock).toBe(true);
   });
 
+  it("updates includeSecondHand", async () => {
+    const updated = await repo.updateIncludeSecondHand(productId, true);
+    expect(updated.includeSecondHand).toBe(true);
+  });
+
+  it("updates excludedSellers (round-trips JSON)", async () => {
+    const sellers = ["SellerA", "SellerB"];
+    const updated = await repo.updateExcludedSellers(productId, sellers);
+    expect(JSON.parse(updated.excludedSellers)).toEqual(sellers);
+  });
+
+  it("updates currentPrice", async () => {
+    const updated = await repo.updateCurrentPrice(productId, 29.99);
+    expect(updated.currentPrice).toBe(29.99);
+  });
+
+  it("updates currentPrice to null", async () => {
+    const updated = await repo.updateCurrentPrice(productId, null);
+    expect(updated.currentPrice).toBeNull();
+  });
+
+  it("rejects duplicate ASIN", async () => {
+    await expect(
+      repo.create({
+        asin: "B00TESTINT1",
+        title: "Duplicate",
+        image: null,
+        url: "https://www.amazon.com/dp/B00TESTINT1",
+        currentPrice: 9.99,
+        inStock: true,
+      })
+    ).rejects.toThrow();
+  });
+
   it("deletes a product", async () => {
     await repo.delete(productId);
     const product = await repo.findByAsin("B00TESTINT1");
