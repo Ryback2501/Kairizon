@@ -46,7 +46,8 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/.playwright-browsers ./.playwright-browsers
 
-RUN chown -R nextjs:nodejs /app/.playwright-browsers
+RUN chown -R nextjs:nodejs /app/.playwright-browsers \
+  && mkdir -p /app/data && chown nextjs:nodejs /app/data
 
 USER nextjs
 
