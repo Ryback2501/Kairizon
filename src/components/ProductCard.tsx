@@ -209,7 +209,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           <button
             disabled={deleting}
             onClick={handleDelete}
-            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Remove product"
             title="Remove product"
           >
@@ -249,10 +249,14 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           <div className="mt-1">
             <Input
               value={targetInput}
-              onChange={(e) => setTargetInput(e.target.value)}
-              type="number"
-              min="0.01"
-              step="0.01"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                  setTargetInput(val);
+                }
+              }}
+              type="text"
+              inputMode="decimal"
               placeholder="Target price"
               className="w-28 py-1 text-xs"
             />
@@ -375,7 +379,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <button
                 disabled={savingTarget}
                 onClick={saveTarget}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Save target price"
                 title="Save"
               >
@@ -393,7 +397,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                   setEditingTarget(false);
                   setTargetInput(product.targetPrice?.toString() ?? "");
                 }}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
                 aria-label="Cancel editing"
                 title="Cancel"
               >
@@ -408,7 +412,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               {/* Edit */}
               <button
                 onClick={() => setEditingTarget(true)}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
                 aria-label={product.targetPrice !== null ? "Edit target price" : "Set target price"}
                 title={product.targetPrice !== null ? "Edit target price" : "Set target price"}
               >
@@ -422,7 +426,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 <button
                   disabled={togglingNotified}
                   onClick={toggleNotified}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     product.notified
                       ? "bg-amber-400 text-white hover:opacity-80"
                       : "bg-brand-charcoal text-white hover:opacity-80"

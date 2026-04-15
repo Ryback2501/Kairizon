@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Product } from "@prisma/client";
 import { ProductCard } from "./ProductCard";
-import { AddProductForm } from "./AddProductForm";
 
-export function ProductList() {
+interface ProductListProps {
+  refreshKey?: number;
+}
+
+export function ProductList({ refreshKey }: ProductListProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +23,7 @@ export function ProductList() {
 
   useEffect(() => {
     void fetchProducts();
-  }, [fetchProducts]);
+  }, [fetchProducts, refreshKey]);
 
   function handleDeleted(id: string) {
     setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -32,8 +35,6 @@ export function ProductList() {
 
   return (
     <div className="space-y-6">
-      <AddProductForm onAdded={fetchProducts} />
-
       {loading ? (
         <p className="text-sm text-brand-gray text-center py-8">Loading…</p>
       ) : products.length === 0 ? (

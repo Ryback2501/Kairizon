@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { AddProductForm } from "./AddProductForm";
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onAdded: () => void;
 }
 
-export function Header({ onOpenSettings }: HeaderProps) {
+export function Header({ onOpenSettings, onAdded }: HeaderProps) {
   const [updating, setUpdating] = useState(false);
 
   async function handleRefreshAll() {
@@ -16,16 +18,25 @@ export function Header({ onOpenSettings }: HeaderProps) {
   }
 
   return (
-    <header className="border-b border-black/8 bg-white">
-      <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-        <span className="font-cal text-lg font-semibold text-brand-charcoal tracking-tight">
+    <header className="shrink-0 border-b border-black/8 bg-white">
+      <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
+        <span className="font-cal text-lg font-semibold text-brand-charcoal tracking-tight shrink-0">
           Kairizon
         </span>
-        <div className="flex items-center gap-2">
+
+        <div className="h-5 w-px bg-black/10 shrink-0" />
+
+        <div className="flex-1 min-w-0">
+          <AddProductForm onAdded={onAdded} />
+        </div>
+
+        <div className="h-5 w-px bg-black/10 shrink-0" />
+
+        <div className="flex items-center gap-2 shrink-0">
           <button
             disabled={updating}
             onClick={handleRefreshAll}
-            className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Refresh all products"
             title="Refresh all products"
           >
@@ -41,7 +52,7 @@ export function Header({ onOpenSettings }: HeaderProps) {
           </button>
           <button
             onClick={onOpenSettings}
-            className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
             aria-label="Open settings"
             title="Settings"
           >
