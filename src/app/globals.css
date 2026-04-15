@@ -11,6 +11,12 @@
 }
 
 @layer base {
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   html {
     font-family: "Inter", sans-serif;
   }

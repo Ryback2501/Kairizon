@@ -19,6 +19,7 @@ export function DashboardClient() {
   const [showSettings, setShowSettings] = useState(false);
   const [settingsConfigured, setSettingsConfigured] = useState(true);
   const [currentSettings, setCurrentSettings] = useState<AppSettingsData>(EMPTY_SETTINGS);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     void fetch("/api/settings")
@@ -39,11 +40,14 @@ export function DashboardClient() {
   }
 
   return (
-    <>
-      <Header onOpenSettings={() => setShowSettings(true)} />
-      <main className="min-h-screen bg-brand-canvas px-4 py-10">
-        <div className="max-w-2xl mx-auto">
-          <ProductList />
+    <div className="h-screen flex flex-col overflow-hidden">
+      <Header
+        onOpenSettings={() => setShowSettings(true)}
+        onAdded={() => setRefreshKey((k) => k + 1)}
+      />
+      <main className="flex-1 overflow-y-auto bg-brand-subtle py-10">
+        <div className="max-w-2xl mx-auto px-4">
+          <ProductList refreshKey={refreshKey} />
         </div>
       </main>
       {showSettings && (
@@ -53,6 +57,6 @@ export function DashboardClient() {
           onSaved={handleSettingsSaved}
         />
       )}
-    </>
+    </div>
   );
 }

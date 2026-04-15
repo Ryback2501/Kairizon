@@ -209,7 +209,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           <button
             disabled={deleting}
             onClick={handleDelete}
-            className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Remove product"
             title="Remove product"
           >
@@ -246,19 +246,24 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
         {/* Info lines — bullet list when not editing, input when editing */}
         {editingTarget ? (
-          <div className="mt-1">
+          <div className="mt-3 inline-flex items-center gap-2">
+            <label className="text-xs font-medium text-brand-gray shrink-0">Target price</label>
             <Input
               value={targetInput}
-              onChange={(e) => setTargetInput(e.target.value)}
-              type="number"
-              min="0.01"
-              step="0.01"
-              placeholder="Target price"
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
+                  setTargetInput(val);
+                }
+              }}
+              type="text"
+              inputMode="decimal"
+              placeholder="0.00"
               className="w-28 py-1 text-xs"
             />
           </div>
         ) : (
-          <ul className="mt-1 list-disc list-inside flex flex-col gap-0.5">
+          <ul className="mt-3 list-disc list-inside flex flex-col gap-0.5">
             {showNoSellerSelected ? (
               <li className="text-xs text-brand-gray">No seller selected. Edit the item to select sellers.</li>
             ) : (
@@ -269,7 +274,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                     : "No price alert"}
                 </li>
                 {stockAlertEnabled && product.trackStock && (
-                  <li className="text-xs text-brand-gray">Notify when back in stock</li>
+                  <li className="text-xs text-brand-gray">Alert when back in stock</li>
                 )}
                 {otherOptionPrice !== null && (
                   <li className="text-xs text-brand-gray">
@@ -289,7 +294,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 checked={product.trackStock}
                 onChange={toggleStockAlert}
                 disabled={togglingStock || !stockAlertEnabled}
-                label="Notify when back in stock"
+                label="Alert when back in stock"
               />
               <Toggle
                 checked={product.includeSecondHand}
@@ -375,7 +380,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <button
                 disabled={savingTarget}
                 onClick={saveTarget}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Save target price"
                 title="Save"
               >
@@ -393,7 +398,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                   setEditingTarget(false);
                   setTargetInput(product.targetPrice?.toString() ?? "");
                 }}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
                 aria-label="Cancel editing"
                 title="Cancel"
               >
@@ -408,7 +413,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               {/* Edit */}
               <button
                 onClick={() => setEditingTarget(true)}
-                className="w-7 h-7 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
+                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
                 aria-label={product.targetPrice !== null ? "Edit target price" : "Set target price"}
                 title={product.targetPrice !== null ? "Edit target price" : "Set target price"}
               >
@@ -422,7 +427,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 <button
                   disabled={togglingNotified}
                   onClick={toggleNotified}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     product.notified
                       ? "bg-amber-400 text-white hover:opacity-80"
                       : "bg-brand-charcoal text-white hover:opacity-80"
