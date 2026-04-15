@@ -50,6 +50,7 @@ Thumbs.db
 # SQLite
 prisma/*.db
 prisma/*.db-journal
+data/
 
 # Docker
 .dockerignore
