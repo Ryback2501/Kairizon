@@ -10,7 +10,7 @@
     "test": "jest",
     "test:unit": "jest --testPathPatterns=tests/unit",
     "test:integration": "jest --testPathPatterns=tests/integration",
-    "test:e2e": "playwright test --pass-with-no-tests",
+    "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e"
   },
   "dependencies": {
