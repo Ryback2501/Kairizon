@@ -14,15 +14,6 @@ jobs:
 
     env:
       DATABASE_URL: file:./test.db
-      NEXTAUTH_SECRET: ci-secret-placeholder
-      NEXTAUTH_URL: http://localhost:3000
-      GOOGLE_CLIENT_ID: placeholder
-      GOOGLE_CLIENT_SECRET: placeholder
-      SMTP_HOST: smtp.example.com
-      SMTP_PORT: "587"
-      SMTP_USER: test@example.com
-      SMTP_PASS: placeholder
-      SMTP_FROM: "Kairizon <test@example.com>"
       NODE_ENV: production
 
     steps:

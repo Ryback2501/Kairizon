@@ -22,9 +22,15 @@ export async function PATCH(
 
   const updated = await repo.updateIncludeSecondHand(id, body.includeSecondHand);
 
-  const sellers: Seller[] = JSON.parse(updated.availableSellers);
+  let sellers: Seller[];
+  let currentExcluded: string[];
+  try {
+    sellers = JSON.parse(updated.availableSellers);
+    currentExcluded = JSON.parse(product.excludedSellers);
+  } catch {
+    return NextResponse.json({ error: "Corrupted seller data" }, { status: 500 });
+  }
   const secondHandNames = sellers.filter((s) => s.isSecondHand).map((s) => s.name);
-  const currentExcluded: string[] = JSON.parse(product.excludedSellers);
 
   // When disabling second-hand: add all second-hand seller names to the excluded list.
   // When re-enabling: remove them so their checkboxes come back ticked.

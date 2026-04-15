@@ -1,13 +1,20 @@
 import { NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
 import { EmailNotificationService } from "@/services/notification/EmailNotificationService";
-
 import { AppSettingsRepository } from "@/repositories/AppSettingsRepository";
+import { isRateLimited, allow } from "@/lib/rate-limit";
 
 const repo = new ProductRepository();
 const notifier = new EmailNotificationService(new AppSettingsRepository());
 
+const COOLDOWN_MS = 60_000; // 1 minute
+
 export async function POST() {
+  if (isRateLimited("test-notifications", COOLDOWN_MS)) {
+    return NextResponse.json({ error: "Too many requests. Wait a minute before testing again." }, { status: 429 });
+  }
+  allow("test-notifications");
+
   const products = await repo.findAll();
 
   if (products.length === 0) {

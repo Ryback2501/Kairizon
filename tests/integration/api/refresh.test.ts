@@ -5,6 +5,11 @@ jest.mock("@/lib/price-check-runner", () => ({
   shouldSkip: jest.fn().mockReturnValue(false),
 }));
 
+jest.mock("@/lib/rate-limit", () => ({
+  isRateLimited: jest.fn().mockReturnValue(false),
+  allow: jest.fn(),
+}));
+
 import { POST } from "@/app/api/products/refresh/route";
 
 beforeEach(() => mockRunUpdate.mockClear());
