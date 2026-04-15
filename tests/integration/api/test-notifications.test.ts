@@ -11,6 +11,11 @@ jest.mock("@/services/notification/EmailNotificationService", () => ({
   })),
 }));
 
+jest.mock("@/lib/rate-limit", () => ({
+  isRateLimited: jest.fn().mockReturnValue(false),
+  allow: jest.fn(),
+}));
+
 import { POST } from "@/app/api/test-notifications/route";
 
 const prisma = new PrismaClient();
