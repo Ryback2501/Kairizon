@@ -33,6 +33,7 @@ function getCard(page: Parameters<Parameters<typeof test>[1]>[0]["page"], title:
 test.describe("Dashboard — product card", () => {
   test("seeded product is visible on the dashboard", async ({ page }) => {
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await expect(page.getByText(PRODUCT_TITLE)).toBeVisible();
   });
 
