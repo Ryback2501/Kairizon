@@ -5,13 +5,14 @@ const repo = new ProductRepository();
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const product = await repo.findById(params.id);
+  const { id } = await params;
+  const product = await repo.findById(id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await repo.delete(params.id);
+  await repo.delete(id);
   return new NextResponse(null, { status: 204 });
 }

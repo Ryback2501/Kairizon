@@ -7,9 +7,10 @@ const repo = new ProductRepository();
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const product = await repo.findById(params.id);
+  const { id } = await params;
+  const product = await repo.findById(id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -19,12 +20,12 @@ export async function PATCH(
     return NextResponse.json({ error: "excludedSellers must be a string array" }, { status: 400 });
   }
 
-  const updated = await repo.updateExcludedSellers(params.id, body.excludedSellers);
+  const updated = await repo.updateExcludedSellers(id, body.excludedSellers);
 
   const sellers: Seller[] = JSON.parse(updated.availableSellers);
   const excluded: string[] = JSON.parse(updated.excludedSellers);
   const currentPrice = computePrice(sellers, updated.includeSecondHand, excluded);
-  const final = await repo.updateCurrentPrice(params.id, currentPrice);
+  const final = await repo.updateCurrentPrice(id, currentPrice);
 
   return NextResponse.json(final);
 }
