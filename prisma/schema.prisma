@@ -29,7 +29,7 @@ model Product {
   inStock       Boolean   @default(true)
   trackStock          Boolean   @default(false)
   stockNotified       Boolean   @default(false)
-  includeSecondHand   Boolean   @default(false)
+  includeSecondHand   Boolean   @default(true)
   availableSellers    String    @default("[]")
   excludedSellers     String    @default("[]")
   createdAt           DateTime  @default(now())

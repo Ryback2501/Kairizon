@@ -31,11 +31,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not fetch product data. Amazon may be blocking the request." }, { status: 422 });
   }
 
-  // Second-hand sellers are excluded by default (includeSecondHand defaults to false)
-  const excludedSellers = result.sellers.filter((s) => s.isSecondHand).map((s) => s.name);
-  const currentPrice = computePrice(result.sellers, false, excludedSellers);
+  // All sellers selected by default; includeSecondHand enabled by default
+  const excludedSellers: string[] = [];
+  const currentPrice = computePrice(result.sellers, true, excludedSellers);
   // inStock tracks Amazon's availability specifically
   const inStock = result.sellers.some((s) => /^amazon$/i.test(s.name.trim()));
-  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock, sellers: result.sellers, excludedSellers });
+  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock, sellers: result.sellers, excludedSellers, includeSecondHand: true });
   return NextResponse.json(product, { status: 201 });
 }
