@@ -20,10 +20,6 @@ export function isValidAmazonUrl(url: string): boolean {
   return extractAsin(url) !== null;
 }
 
-export function buildAmazonUrl(asin: string, domain = "amazon.com"): string {
-  return `https://www.${domain}/dp/${asin}`;
-}
-
 /**
  * Builds the AOD (All Offers Display) URL for a product.
  * The ?aod=1&th=1 parameters instruct Amazon to include all seller

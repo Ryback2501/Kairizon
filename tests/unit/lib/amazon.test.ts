@@ -1,4 +1,4 @@
-import { extractAsin, isValidAmazonUrl, buildAmazonUrl, buildScrapeUrl } from "@/lib/amazon";
+import { extractAsin, isValidAmazonUrl, buildScrapeUrl } from "@/lib/amazon";
 
 describe("extractAsin", () => {
   it("extracts ASIN from /dp/ URL", () => {
@@ -47,20 +47,6 @@ describe("isValidAmazonUrl", () => {
 
   it("returns false for Amazon search URL", () => {
     expect(isValidAmazonUrl("https://www.amazon.com/s?k=laptop")).toBe(false);
-  });
-});
-
-describe("buildAmazonUrl", () => {
-  it("builds a canonical Amazon product URL", () => {
-    expect(buildAmazonUrl("B08N5WRWNW")).toBe(
-      "https://www.amazon.com/dp/B08N5WRWNW"
-    );
-  });
-
-  it("uses a custom domain", () => {
-    expect(buildAmazonUrl("B08N5WRWNW", "amazon.co.uk")).toBe(
-      "https://www.amazon.co.uk/dp/B08N5WRWNW"
-    );
   });
 });
 
