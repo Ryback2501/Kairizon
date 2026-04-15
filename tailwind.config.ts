@@ -14,7 +14,7 @@ const config: Config = {
           charcoal: "#242424",
           midnight: "#111111",
           gray: "#898989",
-          subtle: "#f5f5f5",
+          subtle: "#d4d4d4",
         },
       },
       fontFamily: {
@@ -22,7 +22,7 @@ const config: Config = {
         inter: ["Inter", "sans-serif"],
       },
       boxShadow: {
-        card: "rgba(19,19,22,0.7) 0px 1px 5px -4px, rgba(34,42,53,0.08) 0px 0px 0px 1px, rgba(34,42,53,0.05) 0px 4px 8px 0px",
+        card: "rgba(19,19,22,0.7) 0px 1px 5px -4px, rgba(34,42,53,0.05) 0px 4px 8px 0px",
         "card-hover":
           "rgba(19,19,22,0.7) 0px 2px 8px -4px, rgba(34,42,53,0.12) 0px 0px 0px 1px, rgba(34,42,53,0.08) 0px 8px 16px 0px",
         "button-inset": "rgba(255,255,255,0.15) 0px 2px 0px inset",

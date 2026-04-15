@@ -45,8 +45,8 @@ export function DashboardClient() {
         onOpenSettings={() => setShowSettings(true)}
         onAdded={() => setRefreshKey((k) => k + 1)}
       />
-      <main className="flex-1 overflow-y-auto bg-brand-canvas px-4 py-10">
-        <div className="max-w-2xl mx-auto">
+      <main className="flex-1 overflow-y-auto bg-brand-subtle py-10">
+        <div className="max-w-2xl mx-auto px-4">
           <ProductList refreshKey={refreshKey} />
         </div>
       </main>

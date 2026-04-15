@@ -246,7 +246,8 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
         {/* Info lines — bullet list when not editing, input when editing */}
         {editingTarget ? (
-          <div className="mt-1">
+          <div className="mt-3 inline-flex items-center gap-2">
+            <label className="text-xs font-medium text-brand-gray shrink-0">Target price</label>
             <Input
               value={targetInput}
               onChange={(e) => {
@@ -257,12 +258,12 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               }}
               type="text"
               inputMode="decimal"
-              placeholder="Target price"
+              placeholder="0.00"
               className="w-28 py-1 text-xs"
             />
           </div>
         ) : (
-          <ul className="mt-1 list-disc list-inside flex flex-col gap-0.5">
+          <ul className="mt-3 list-disc list-inside flex flex-col gap-0.5">
             {showNoSellerSelected ? (
               <li className="text-xs text-brand-gray">No seller selected. Edit the item to select sellers.</li>
             ) : (
@@ -273,7 +274,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                     : "No price alert"}
                 </li>
                 {stockAlertEnabled && product.trackStock && (
-                  <li className="text-xs text-brand-gray">Notify when back in stock</li>
+                  <li className="text-xs text-brand-gray">Alert when back in stock</li>
                 )}
                 {otherOptionPrice !== null && (
                   <li className="text-xs text-brand-gray">
@@ -293,7 +294,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 checked={product.trackStock}
                 onChange={toggleStockAlert}
                 disabled={togglingStock || !stockAlertEnabled}
-                label="Notify when back in stock"
+                label="Alert when back in stock"
               />
               <Toggle
                 checked={product.includeSecondHand}
