@@ -5,9 +5,10 @@ const repo = new ProductRepository();
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const product = await repo.findById(params.id);
+  const { id } = await params;
+  const product = await repo.findById(id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -17,6 +18,6 @@ export async function PATCH(
     return NextResponse.json({ error: "trackStock must be a boolean" }, { status: 400 });
   }
 
-  const updated = await repo.updateTrackStock(params.id, body.trackStock);
+  const updated = await repo.updateTrackStock(id, body.trackStock);
   return NextResponse.json(updated);
 }

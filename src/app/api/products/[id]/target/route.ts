@@ -5,9 +5,10 @@ const repo = new ProductRepository();
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const product = await repo.findById(params.id);
+  const { id } = await params;
+  const product = await repo.findById(id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -22,6 +23,6 @@ export async function PATCH(
     return NextResponse.json({ error: "targetPrice must be a positive number or null" }, { status: 400 });
   }
 
-  const updated = await repo.updateTargetPrice(params.id, targetPrice);
+  const updated = await repo.updateTargetPrice(id, targetPrice);
   return NextResponse.json(updated);
 }
