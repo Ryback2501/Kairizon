@@ -7,7 +7,7 @@ test.describe("Settings modal", () => {
 
     await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
     await expect(page.getByPlaceholder("smtp.gmail.com")).toBeVisible();
-    await expect(page.getByPlaceholder("you@gmail.com")).toBeVisible();
+    await expect(page.getByPlaceholder("you@gmail.com", { exact: true })).toBeVisible();
     await expect(page.getByPlaceholder("App password")).toBeVisible();
     await expect(page.getByPlaceholder("Kairizon <you@gmail.com>")).toBeVisible();
   });
@@ -16,12 +16,9 @@ test.describe("Settings modal", () => {
     await page.goto("/");
     await page.getByRole("button", { name: "Settings" }).click();
 
-    // Update the host field
-    const hostInput = page.getByPlaceholder("smtp.gmail.com");
-    await hostInput.fill("smtp.updated.com");
+    await page.getByPlaceholder("smtp.gmail.com").fill("smtp.updated.com");
 
-    // Fill required fields if empty
-    const userInput = page.getByPlaceholder("you@gmail.com");
+    const userInput = page.getByPlaceholder("you@gmail.com", { exact: true });
     if (!(await userInput.inputValue())) {
       await userInput.fill("updated@test.com");
     }
@@ -38,11 +35,23 @@ test.describe("Settings modal", () => {
     await expect(page.getByRole("heading", { name: "Settings" })).not.toBeVisible();
   });
 
-  test("reopening settings shows the previously saved host", async ({ page }) => {
+  test("reopening settings shows the previously saved host", async ({ page, request }) => {
+    // Seed a known host value independently so this test does not rely on test 2
+    await request.put("/api/settings", {
+      data: {
+        smtpHost: "smtp.persist-check.com",
+        smtpPort: 587,
+        smtpUser: "persist@test.com",
+        smtpPass: "persist-pass",
+        smtpFrom: "Persist <persist@test.com>",
+      },
+    });
+
     await page.goto("/");
+    // Wait for the settings useEffect fetch to complete before opening the modal
+    await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: "Settings" }).click();
-    const hostInput = page.getByPlaceholder("smtp.gmail.com");
-    await expect(hostInput).toHaveValue("smtp.updated.com");
+    await expect(page.getByPlaceholder("smtp.gmail.com")).toHaveValue("smtp.persist-check.com");
   });
 
   test("close button dismisses the modal when SMTP is configured", async ({ page }) => {
