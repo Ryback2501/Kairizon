@@ -188,4 +188,78 @@ describe("PriceCheckService", () => {
 
     expect(notifier.sendPriceAlert).not.toHaveBeenCalled();
   });
+
+  it("does not send price alert when currentPrice is null", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({ currentPrice: 50, targetPrice: 40, notified: false });
+    repo.findAll.mockResolvedValue([product]);
+    // No sellers → computePrice returns null
+    scraper.scrape.mockResolvedValue(makeScrapeResult({ sellers: [] }));
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(notifier.sendPriceAlert).not.toHaveBeenCalled();
+  });
+
+  it("resets stockNotified after a full in-stock cycle", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({
+      inStock: true,
+      trackStock: true,
+      stockNotified: true,
+      targetPrice: null,
+    });
+    repo.findAll.mockResolvedValue([product]);
+    scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 50, inStock: true }));
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(repo.setStockNotified).toHaveBeenCalledWith("prod-1", false, true);
+    expect(notifier.sendStockAlert).not.toHaveBeenCalled();
+  });
+
+  it("auto-excludes new second-hand sellers when includeSecondHand is false", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({
+      includeSecondHand: false,
+      excludedSellers: "[]",
+      targetPrice: null,
+    });
+    repo.findAll.mockResolvedValue([product]);
+    repo.updateExcludedSellers.mockResolvedValue(product);
+    scraper.scrape.mockResolvedValue(
+      makeScrapeResult({
+        sellers: [
+          { name: "Amazon", price: 50, shipping: 0, isSecondHand: false },
+          { name: "UsedSeller", price: 20, shipping: 0, isSecondHand: true },
+        ],
+      })
+    );
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(repo.updateExcludedSellers).toHaveBeenCalledWith("prod-1", ["UsedSeller"]);
+  });
+
+  it("skips updateExcludedSellers when second-hand seller is already excluded", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({
+      includeSecondHand: false,
+      excludedSellers: JSON.stringify(["UsedSeller"]),
+      targetPrice: null,
+    });
+    repo.findAll.mockResolvedValue([product]);
+    scraper.scrape.mockResolvedValue(
+      makeScrapeResult({
+        sellers: [
+          { name: "Amazon", price: 50, shipping: 0, isSecondHand: false },
+          { name: "UsedSeller", price: 20, shipping: 0, isSecondHand: true },
+        ],
+      })
+    );
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(repo.updateExcludedSellers).not.toHaveBeenCalled();
+  });
 });
