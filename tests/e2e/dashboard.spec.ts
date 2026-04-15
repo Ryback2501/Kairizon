@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 const PRODUCT_TITLE = "E2E Test Product";
 const ADD_ASIN = "B00E2EADD1";
@@ -26,7 +26,7 @@ const MOCK_PRODUCT = {
 };
 
 // Cards are <div class="...shadow-card..."> — find by that class + product title
-function getCard(page: Parameters<Parameters<typeof test>[1]>[0]["page"], title: string) {
+function getCard(page: Page, title: string) {
   return page.locator('[class*="shadow-card"]').filter({ hasText: title }).first();
 }
 
