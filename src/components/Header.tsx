@@ -6,9 +6,10 @@ import { AddProductForm } from "./AddProductForm";
 interface HeaderProps {
   onOpenSettings: () => void;
   onAdded: () => void;
+  onRefreshed: () => void;
 }
 
-export function Header({ onOpenSettings, onAdded }: HeaderProps) {
+export function Header({ onOpenSettings, onAdded, onRefreshed }: HeaderProps) {
   const [updating, setUpdating] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
@@ -17,7 +18,9 @@ export function Header({ onOpenSettings, onAdded }: HeaderProps) {
     setUpdating(true);
     try {
       const res = await fetch("/api/products/refresh", { method: "POST" });
-      if (!res.ok) {
+      if (res.ok) {
+        onRefreshed();
+      } else {
         const data = await res.json() as { error?: string };
         setRefreshError(data.error ?? "Refresh failed");
       }
