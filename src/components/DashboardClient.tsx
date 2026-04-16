@@ -44,6 +44,7 @@ export function DashboardClient() {
       <Header
         onOpenSettings={() => setShowSettings(true)}
         onAdded={() => setRefreshKey((k) => k + 1)}
+        onRefreshed={() => setRefreshKey((k) => k + 1)}
       />
       <main className="flex-1 overflow-y-auto bg-brand-subtle py-10">
         <div className="max-w-2xl mx-auto px-4">
