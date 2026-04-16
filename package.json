@@ -3,9 +3,9 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "npx prisma db push && ts-node -r tsconfig-paths/register --project tsconfig.server.json server.ts",
+    "dev": "sh -c 'export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && npx prisma db push && ts-node -r tsconfig-paths/register --project tsconfig.server.json server.ts'",
     "build": "next build && tsc --project tsconfig.server.json && tsc-alias --project tsconfig.server.json",
-    "start": "NODE_ENV=production sh -c 'npx prisma db push && node dist/server.js'",
+    "start": "NODE_ENV=production sh -c 'export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && npx prisma db push && node dist/server.js'",
     "lint": "eslint .",
     "test": "jest",
     "test:unit": "jest --testPathPatterns=tests/unit",

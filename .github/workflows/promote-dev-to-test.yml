@@ -38,7 +38,7 @@ jobs:
     needs: ci
 
     env:
-      DATABASE_URL: file:./test.db
+      DATABASE_FILE: test.db
       NODE_ENV: test
 
     steps:
@@ -58,13 +58,13 @@ jobs:
         run: npx prisma generate
 
       - name: Run database migrations
-        run: npx prisma db push --force-reset
+        run: DATABASE_URL=file:./data/$DATABASE_FILE npx prisma db push --force-reset
 
       - name: Build
         run: npm run build
 
       - name: Start app server
-        run: node dist/server.js &
+        run: DATABASE_URL=file:./data/$DATABASE_FILE node dist/server.js &
 
       - name: Wait for app to be ready
         run: npx wait-on http://localhost:3000 --timeout 30000

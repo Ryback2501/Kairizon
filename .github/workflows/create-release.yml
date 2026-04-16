@@ -13,7 +13,7 @@ jobs:
       contents: write
 
     env:
-      DATABASE_URL: file:./test.db
+      DATABASE_FILE: test.db
       NODE_ENV: production
 
     steps:
@@ -66,7 +66,6 @@ jobs:
             dist/ \
             public/ \
             prisma/schema.prisma \
-            prisma/migrations/ \
             package.json \
             package-lock.json \
             .playwright-browsers/ \
