@@ -20,6 +20,11 @@ export function isValidAmazonUrl(url: string): boolean {
   return extractAsin(url) !== null;
 }
 
+/** Returns true if the given seller name refers to Amazon itself (case-insensitive). */
+export function isAmazonSeller(name: string): boolean {
+  return /^amazon$/i.test(name.trim());
+}
+
 /**
  * Builds the AOD (All Offers Display) URL for a product.
  * The ?aod=1&th=1 parameters instruct Amazon to include all seller

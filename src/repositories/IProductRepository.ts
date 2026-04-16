@@ -5,6 +5,7 @@ export interface IProductRepository {
   findAll(): Promise<Product[]>;
   findById(id: string): Promise<Product | null>;
   findByAsin(asin: string): Promise<Product | null>;
+  /** Returns only products that have a target price set. Used in tests; reserved for future filtering. */
   findAllWithTargets(): Promise<Product[]>;
   create(data: {
     asin: string;
@@ -17,6 +18,7 @@ export interface IProductRepository {
     excludedSellers?: string[];
     includeSecondHand?: boolean;
   }): Promise<Product>;
+  /** Sets the target price and resets notified=false so alerts can fire again at the new threshold. */
   updateTargetPrice(id: string, targetPrice: number | null): Promise<Product>;
   updateTrackStock(id: string, trackStock: boolean): Promise<Product>;
   updateIncludeSecondHand(id: string, includeSecondHand: boolean): Promise<Product>;
