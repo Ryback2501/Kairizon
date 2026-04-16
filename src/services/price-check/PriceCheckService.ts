@@ -40,7 +40,7 @@ export class PriceCheckService implements IPriceCheckService {
     // weren't in the excluded list yet (e.g. appeared after initial scrape).
     if (!product.includeSecondHand) {
       const newSecondHand = result.sellers
-        .filter((s) => s.isSecondHand && !excluded.includes(s.name))
+        .filter((s) => s.isSecondHand && !excluded.some((e) => e.toLowerCase() === s.name.toLowerCase()))
         .map((s) => s.name);
       if (newSecondHand.length > 0) {
         excluded = [...excluded, ...newSecondHand];
@@ -55,17 +55,16 @@ export class PriceCheckService implements IPriceCheckService {
 
     await this.repo.updatePriceAndStock(product.id, currentPrice, amazonInStock, result.sellers);
 
-    // Back in stock
+    // Back in stock — send stock alert, then continue to price check
     if (amazonInStock && !product.inStock && product.trackStock && !product.stockNotified) {
       await this.notifier.sendStockAlert({ productTitle: product.title, productUrl: product.url });
       await this.repo.setStockNotified(product.id, true, true);
-      return;
     }
 
-    // Went out of stock — reset for future re-alert
+    // Went out of stock — reset for future re-alert, then continue to price check
+    // (non-Amazon selected sellers may still have stock and meet the target price)
     if (!amazonInStock && product.inStock) {
       await this.repo.setStockNotified(product.id, false, false);
-      return;
     }
 
     // Cycle complete — reset stockNotified
@@ -73,8 +72,8 @@ export class PriceCheckService implements IPriceCheckService {
       await this.repo.setStockNotified(product.id, false, true);
     }
 
-    // Price alert
-    if (amazonInStock && currentPrice !== null && product.targetPrice !== null && currentPrice <= product.targetPrice && !product.notified) {
+    // Price alert — fires if any eligible selected seller has price ≤ target
+    if (currentPrice !== null && product.targetPrice !== null && currentPrice <= product.targetPrice && !product.notified) {
       await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice, targetPrice: product.targetPrice });
       await this.repo.setNotified(product.id, true);
       return;
