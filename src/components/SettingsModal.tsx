@@ -23,6 +23,10 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (settings.smtpPort < 1 || settings.smtpPort > 65535) {
+      setError("SMTP port must be between 1 and 65535");
+      return;
+    }
     setSaving(true);
     try {
       const res = await fetch("/api/settings", {
@@ -89,6 +93,8 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
               value={settings.smtpPort.toString()}
               onChange={(e) => set("smtpPort", parseInt(e.target.value) || 587)}
               placeholder="587"
+              min={1}
+              max={65535}
             />
           </div>
 

@@ -5,6 +5,7 @@ import type { IPriceCheckService } from "./IPriceCheckService";
 import type { Product } from "@prisma/client";
 import { randomDelay } from "@/services/scraping/AmazonScraper";
 import { computePrice } from "@/lib/pricing";
+import { isAmazonSeller } from "@/lib/amazon";
 
 export class PriceCheckService implements IPriceCheckService {
   constructor(
@@ -50,7 +51,7 @@ export class PriceCheckService implements IPriceCheckService {
     const currentPrice = computePrice(result.sellers, product.includeSecondHand, excluded);
 
     // inStock tracks Amazon's availability specifically
-    const amazonInStock = result.sellers.some((s) => /^amazon$/i.test(s.name.trim()));
+    const amazonInStock = result.sellers.some((s) => isAmazonSeller(s.name));
 
     await this.repo.updatePriceAndStock(product.id, currentPrice, amazonInStock, result.sellers);
 

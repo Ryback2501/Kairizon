@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
 import { AmazonScraper } from "@/services/scraping/AmazonScraper";
-import { isValidAmazonUrl, extractAsin } from "@/lib/amazon";
+import { isValidAmazonUrl, extractAsin, isAmazonSeller } from "@/lib/amazon";
 import { computePrice } from "@/lib/pricing";
 
 const repo = new ProductRepository();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const excludedSellers: string[] = [];
   const currentPrice = computePrice(result.sellers, true, excludedSellers);
   // inStock tracks Amazon's availability specifically
-  const inStock = result.sellers.some((s) => /^amazon$/i.test(s.name.trim()));
+  const inStock = result.sellers.some((s) => isAmazonSeller(s.name));
   const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock, sellers: result.sellers, excludedSellers, includeSecondHand: true });
   return NextResponse.json(product, { status: 201 });
 }

@@ -7,6 +7,8 @@ import { Card } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Toggle } from "./ui/Toggle";
 import type { Seller } from "@/types";
+import { isAmazonSeller } from "@/lib/amazon";
+import { deduplicateSellers } from "@/lib/pricing";
 
 interface ProductCardProps {
   product: Product;
@@ -29,8 +31,12 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
   async function saveTarget() {
     setCardError(null);
-    setSavingTarget(true);
     const value = targetInput === "" ? null : parseFloat(targetInput);
+    if (value !== null && isNaN(value)) {
+      setCardError("Invalid price");
+      return;
+    }
+    setSavingTarget(true);
     try {
       const res = await fetch(`/api/products/${product.id}/target`, {
         method: "PATCH",
@@ -122,13 +128,14 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   }
 
   async function toggleNotified() {
+    const newNotified = !product.notified;
     setCardError(null);
     setTogglingNotified(true);
     try {
       const res = await fetch(`/api/products/${product.id}/notified`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notified: !product.notified }),
+        body: JSON.stringify({ notified: newNotified }),
       });
       if (res.ok) {
         const updated = await res.json() as Product;
@@ -158,26 +165,16 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   }
 
   // ── Price display logic ──────────────────────────────────────────────────
-  // Deduplicate by name (safety net for any legacy data stored with duplicates)
-  const rawSellers: Seller[] = JSON.parse(product.availableSellers);
-  const sellerMap = new Map<string, Seller>();
-  for (const s of rawSellers) {
-    const key = s.name.toLowerCase();
-    const existing = sellerMap.get(key);
-    if (!existing || s.price + s.shipping < existing.price + existing.shipping) {
-      sellerMap.set(key, s);
-    }
-  }
-  const sellers = Array.from(sellerMap.values());
+  const sellers = deduplicateSellers(JSON.parse(product.availableSellers) as Seller[]);
   const excluded: string[] = JSON.parse(product.excludedSellers);
 
-  const isAmazonSelected = !excluded.some((e) => /^amazon$/i.test(e.trim()));
-  const amazonSeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
+  const isAmazonSelected = !excluded.some((e) => isAmazonSeller(e));
+  const amazonSeller = sellers.find((s) => isAmazonSeller(s.name));
 
   const nonAmazonEligible = sellers
     .filter(
       (s) =>
-        !/^amazon$/i.test(s.name.trim()) &&
+        !isAmazonSeller(s.name) &&
         !excluded.some((e) => e.toLowerCase() === s.name.toLowerCase()) &&
         (product.includeSecondHand || !s.isSecondHand)
     )
@@ -219,9 +216,9 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
   // ── Seller table data ────────────────────────────────────────────────────
   type DisplaySeller = Seller & { outOfStock?: boolean };
-  const amazonDisplaySeller = sellers.find((s) => /^amazon$/i.test(s.name.trim()));
+  const amazonDisplaySeller = sellers.find((s) => isAmazonSeller(s.name));
   const nonAmazonSellers = sellers
-    .filter((s) => !/^amazon$/i.test(s.name.trim()))
+    .filter((s) => !isAmazonSeller(s.name))
     .filter((s) => product.includeSecondHand || !s.isSecondHand)
     .sort((a, b) => a.price + a.shipping - (b.price + b.shipping));
   const displaySellers: DisplaySeller[] = [

@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import { extractAsin, buildScrapeUrl } from "@/lib/amazon";
+import { deduplicateSellers } from "@/lib/pricing";
 import type { IScraper } from "./IScraper";
 import type { ScrapeResult, Seller } from "@/types";
 
@@ -99,17 +100,7 @@ export class AmazonScraper implements IScraper {
         // Shim __name so compiled page.evaluate callbacks work across all bundlers
         await page.evaluate("window.__name = window.__name || function(f) { return f; }");
         const rawSellers = await extractSellers(page);
-        // Deduplicate by seller name — Amazon often lists the same seller in both
-        // the pinned offer and the regular offer list. Keep the cheapest total.
-        const seen = new Map<string, Seller>();
-        for (const s of rawSellers) {
-          const key = s.name.toLowerCase();
-          const existing = seen.get(key);
-          if (!existing || s.price + s.shipping < existing.price + existing.shipping) {
-            seen.set(key, s);
-          }
-        }
-        sellers = Array.from(seen.values());
+        sellers = deduplicateSellers(rawSellers);
       }
 
       // Buy Box fallback
