@@ -6,7 +6,7 @@ services:
       - "3000:3000"
     env_file: .env
     environment:
-      DATABASE_URL: file:./data/kairizon.db
+      DATABASE_FILE: kairizon.db
     volumes:
       - ./data:/app/data
       # SQLite DB is at ./data/kairizon.db on the host — back up by copying this file
