@@ -25,88 +25,136 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
   const [togglingSellerName, setTogglingSellerName] = useState<string | null>(null);
   const [togglingNotified, setTogglingNotified] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
 
   async function saveTarget() {
+    setCardError(null);
     setSavingTarget(true);
     const value = targetInput === "" ? null : parseFloat(targetInput);
-    const res = await fetch(`/api/products/${product.id}/target`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ targetPrice: value }),
-    });
-    if (res.ok) {
-      const updated = await res.json() as Product;
-      onUpdated(updated);
-      setEditingTarget(false);
+    try {
+      const res = await fetch(`/api/products/${product.id}/target`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetPrice: value }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as Product;
+        onUpdated(updated);
+        setEditingTarget(false);
+      } else {
+        setCardError("Could not save target price");
+      }
+    } catch {
+      setCardError("Network error");
+    } finally {
+      setSavingTarget(false);
     }
-    setSavingTarget(false);
   }
 
   async function toggleStockAlert(checked: boolean) {
+    setCardError(null);
     setTogglingStock(true);
-    const res = await fetch(`/api/products/${product.id}/stock-alert`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ trackStock: checked }),
-    });
-    if (res.ok) {
-      const updated = await res.json() as Product;
-      onUpdated(updated);
+    try {
+      const res = await fetch(`/api/products/${product.id}/stock-alert`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trackStock: checked }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as Product;
+        onUpdated(updated);
+      } else {
+        setCardError("Could not update stock alert");
+      }
+    } catch {
+      setCardError("Network error");
+    } finally {
+      setTogglingStock(false);
     }
-    setTogglingStock(false);
   }
 
   async function toggleSecondHand(checked: boolean) {
+    setCardError(null);
     setTogglingSecondHand(true);
-    const res = await fetch(`/api/products/${product.id}/second-hand`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ includeSecondHand: checked }),
-    });
-    if (res.ok) {
-      const updated = await res.json() as Product;
-      onUpdated(updated);
+    try {
+      const res = await fetch(`/api/products/${product.id}/second-hand`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ includeSecondHand: checked }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as Product;
+        onUpdated(updated);
+      } else {
+        setCardError("Could not update second-hand setting");
+      }
+    } catch {
+      setCardError("Network error");
+    } finally {
+      setTogglingSecondHand(false);
     }
-    setTogglingSecondHand(false);
   }
 
   async function toggleSeller(sellerName: string, exclude: boolean) {
+    setCardError(null);
     setTogglingSellerName(sellerName);
     const current: string[] = JSON.parse(product.excludedSellers);
     const newExcluded = exclude
       ? Array.from(new Set([...current, sellerName]))
       : current.filter((n) => n !== sellerName);
-    const res = await fetch(`/api/products/${product.id}/excluded-sellers`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ excludedSellers: newExcluded }),
-    });
-    if (res.ok) {
-      const updated = await res.json() as Product;
-      onUpdated(updated);
+    try {
+      const res = await fetch(`/api/products/${product.id}/excluded-sellers`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ excludedSellers: newExcluded }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as Product;
+        onUpdated(updated);
+      } else {
+        setCardError("Could not update seller");
+      }
+    } catch {
+      setCardError("Network error");
+    } finally {
+      setTogglingSellerName(null);
     }
-    setTogglingSellerName(null);
   }
 
   async function toggleNotified() {
+    setCardError(null);
     setTogglingNotified(true);
-    const res = await fetch(`/api/products/${product.id}/notified`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notified: !product.notified }),
-    });
-    if (res.ok) {
-      const updated = await res.json() as Product;
-      onUpdated(updated);
+    try {
+      const res = await fetch(`/api/products/${product.id}/notified`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notified: !product.notified }),
+      });
+      if (res.ok) {
+        const updated = await res.json() as Product;
+        onUpdated(updated);
+      } else {
+        setCardError("Could not update notification state");
+      }
+    } catch {
+      setCardError("Network error");
+    } finally {
+      setTogglingNotified(false);
     }
-    setTogglingNotified(false);
   }
 
   async function handleDelete() {
+    setCardError(null);
     setDeleting(true);
-    const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
-    if (res.ok) onDeleted(product.id);
-    else setDeleting(false);
+    try {
+      const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
+      if (res.ok) onDeleted(product.id);
+      else setCardError("Could not delete product");
+    } catch {
+      setCardError("Network error");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   // ── Price display logic ──────────────────────────────────────────────────
@@ -370,6 +418,11 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               </tbody>
             </table>
           </>
+        )}
+
+        {/* Error message */}
+        {cardError && (
+          <p className="mt-2 text-xs text-red-600">{cardError}</p>
         )}
 
         {/* Action row */}
