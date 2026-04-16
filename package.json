@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "test": "jest",
     "test:unit": "jest --testPathPatterns=tests/unit",
-    "test:integration": "jest --testPathPatterns=tests/integration",
+    "test:integration": "jest --testPathPatterns=tests/integration --runInBand",
     "test:e2e": "playwright test",
     "test:all": "npm run test && npm run test:e2e"
   },
