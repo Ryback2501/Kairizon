@@ -54,6 +54,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Install Playwright browsers
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: .playwright-browsers
+        run: npx playwright install chromium
+
       - name: Package artifact
         run: |
           zip -r kairizon-${{ github.ref_name }}.zip \
@@ -64,6 +69,7 @@ jobs:
             prisma/migrations/ \
             package.json \
             package-lock.json \
+            .playwright-browsers/ \
             --exclude "*.map"
 
       - name: Create GitHub Release

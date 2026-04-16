@@ -10,15 +10,31 @@ interface HeaderProps {
 
 export function Header({ onOpenSettings, onAdded }: HeaderProps) {
   const [updating, setUpdating] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   async function handleRefreshAll() {
+    setRefreshError(null);
     setUpdating(true);
-    await fetch("/api/products/refresh", { method: "POST" });
-    setUpdating(false);
+    try {
+      const res = await fetch("/api/products/refresh", { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        setRefreshError(data.error ?? "Refresh failed");
+      }
+    } catch {
+      setRefreshError("Network error — could not refresh");
+    } finally {
+      setUpdating(false);
+    }
   }
 
   return (
     <header className="shrink-0 border-b border-black/8 bg-white">
+      {refreshError && (
+        <div className="bg-red-50 border-b border-red-100 px-4 py-2 text-xs text-red-600 text-center">
+          {refreshError}
+        </div>
+      )}
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
         <span className="font-cal text-lg font-semibold text-brand-charcoal tracking-tight shrink-0">
           Kairizon
