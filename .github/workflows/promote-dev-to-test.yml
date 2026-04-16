@@ -57,14 +57,17 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Set DATABASE_URL
+        run: echo "DATABASE_URL=file:./data/$DATABASE_FILE" >> $GITHUB_ENV
+
       - name: Run database migrations
-        run: DATABASE_URL=file:./data/$DATABASE_FILE npx prisma db push --force-reset
+        run: npx prisma db push --force-reset
 
       - name: Build
         run: npm run build
 
       - name: Start app server
-        run: DATABASE_URL=file:./data/$DATABASE_FILE node dist/server.js &
+        run: node dist/server.js &
 
       - name: Wait for app to be ready
         run: npx wait-on http://localhost:3000 --timeout 30000

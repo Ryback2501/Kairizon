@@ -40,8 +40,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Set DATABASE_URL
+        run: echo "DATABASE_URL=file:./data/$DATABASE_FILE" >> $GITHUB_ENV
+
       - name: Run database migrations
-        run: DATABASE_URL=file:./data/$DATABASE_FILE npx prisma db push --force-reset
+        run: npx prisma db push --force-reset
 
       - name: Unit tests
         run: npm run test:unit
