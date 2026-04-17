@@ -15,7 +15,13 @@ export async function POST() {
   }
   allow("test-notifications");
 
-  const products = await repo.findAll();
+  let products;
+  try {
+    products = await repo.findAll();
+  } catch (err) {
+    console.error("[test-notifications] Failed to fetch products:", err);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+  }
 
   if (products.length === 0) {
     return NextResponse.json({ error: "No products to test with" }, { status: 400 });
@@ -25,7 +31,7 @@ export async function POST() {
   const currentPrice = product.currentPrice ?? 49.99;
   const targetPrice = product.targetPrice ?? currentPrice * 0.9;
 
-  await Promise.all([
+  const results = await Promise.allSettled([
     notifier.sendPriceAlert({
       productTitle: product.title,
       productUrl: product.url,
@@ -37,6 +43,13 @@ export async function POST() {
       productUrl: product.url,
     }),
   ]);
+
+  const failed = results.filter((r) => r.status === "rejected");
+  if (failed.length > 0) {
+    const reasons = failed.map((r) => (r as PromiseRejectedResult).reason as unknown);
+    console.error("[test-notifications] One or more notifications failed:", reasons);
+    return NextResponse.json({ error: "One or more notifications failed to send" }, { status: 500 });
+  }
 
   return NextResponse.json({ product: product.title });
 }

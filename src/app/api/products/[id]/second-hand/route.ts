@@ -45,7 +45,12 @@ export async function PATCH(
   }
 
   const withExcluded = await repo.updateExcludedSellers(id, newExcluded);
-  const excluded: string[] = JSON.parse(withExcluded.excludedSellers);
+  let excluded: string[];
+  try {
+    excluded = JSON.parse(withExcluded.excludedSellers) as string[];
+  } catch {
+    return NextResponse.json({ error: "Corrupted seller data" }, { status: 500 });
+  }
   const currentPrice = computePrice(sellers, withExcluded.includeSecondHand, excluded);
   const final = await repo.updateCurrentPrice(id, currentPrice);
 
