@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
+import { parseBody } from "@/lib/api";
 
 const repo = new ProductRepository();
 
@@ -13,10 +14,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await req.json() as { targetPrice?: unknown };
+  const parsed = await parseBody<{ targetPrice?: unknown }>(req);
+  if (!parsed.ok) return parsed.res;
+  const { targetPrice: rawTargetPrice } = parsed.data;
   const targetPrice =
-    body.targetPrice === null ? null
-    : typeof body.targetPrice === "number" && body.targetPrice > 0 ? body.targetPrice
+    rawTargetPrice === null ? null
+    : typeof rawTargetPrice === "number" && rawTargetPrice > 0 ? rawTargetPrice
     : undefined;
 
   if (targetPrice === undefined) {

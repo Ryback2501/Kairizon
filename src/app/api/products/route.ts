@@ -3,6 +3,7 @@ import { ProductRepository } from "@/repositories/ProductRepository";
 import { AmazonScraper } from "@/services/scraping/AmazonScraper";
 import { isValidAmazonUrl, extractAsin, isAmazonSeller } from "@/lib/amazon";
 import { computePrice } from "@/lib/pricing";
+import { parseBody } from "@/lib/api";
 
 const repo = new ProductRepository();
 const scraper = new AmazonScraper();
@@ -13,8 +14,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json() as { url?: unknown };
-  const url = typeof body.url === "string" ? body.url.trim() : "";
+  const parsed = await parseBody<{ url?: unknown }>(req);
+  if (!parsed.ok) return parsed.res;
+  const url = typeof parsed.data.url === "string" ? parsed.data.url.trim() : "";
 
   if (!isValidAmazonUrl(url)) {
     return NextResponse.json({ error: "Invalid Amazon product URL" }, { status: 400 });

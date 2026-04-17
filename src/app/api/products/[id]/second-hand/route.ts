@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
 import { computePrice } from "@/lib/pricing";
 import type { Seller } from "@/types";
+import { parseBody } from "@/lib/api";
 
 const repo = new ProductRepository();
 
@@ -15,12 +16,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await req.json() as { includeSecondHand?: unknown };
-  if (typeof body.includeSecondHand !== "boolean") {
+  const parsed = await parseBody<{ includeSecondHand?: unknown }>(req);
+  if (!parsed.ok) return parsed.res;
+  if (typeof parsed.data.includeSecondHand !== "boolean") {
     return NextResponse.json({ error: "includeSecondHand must be a boolean" }, { status: 400 });
   }
 
-  const updated = await repo.updateIncludeSecondHand(id, body.includeSecondHand);
+  const updated = await repo.updateIncludeSecondHand(id, parsed.data.includeSecondHand);
 
   let sellers: Seller[];
   let currentExcluded: string[];
@@ -35,7 +37,7 @@ export async function PATCH(
   // When disabling second-hand: add all second-hand seller names to the excluded list.
   // When re-enabling: remove them so their checkboxes come back ticked.
   let newExcluded: string[];
-  if (!body.includeSecondHand) {
+  if (!parsed.data.includeSecondHand) {
     newExcluded = Array.from(new Set([...currentExcluded, ...secondHandNames]));
   } else {
     const toRemove = new Set(secondHandNames);

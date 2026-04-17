@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
 import { computePrice } from "@/lib/pricing";
 import type { Seller } from "@/types";
+import { parseBody } from "@/lib/api";
 
 const repo = new ProductRepository();
 
@@ -15,12 +16,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await req.json() as { excludedSellers?: unknown };
-  if (!Array.isArray(body.excludedSellers) || !body.excludedSellers.every((s) => typeof s === "string")) {
+  const parsed = await parseBody<{ excludedSellers?: unknown }>(req);
+  if (!parsed.ok) return parsed.res;
+  if (!Array.isArray(parsed.data.excludedSellers) || !parsed.data.excludedSellers.every((s) => typeof s === "string")) {
     return NextResponse.json({ error: "excludedSellers must be a string array" }, { status: 400 });
   }
 
-  const updated = await repo.updateExcludedSellers(id, body.excludedSellers);
+  const updated = await repo.updateExcludedSellers(id, parsed.data.excludedSellers as string[]);
 
   const sellers: Seller[] = JSON.parse(updated.availableSellers);
   const excluded: string[] = JSON.parse(updated.excludedSellers);
