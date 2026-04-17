@@ -26,6 +26,11 @@ export async function PATCH(
     return NextResponse.json({ error: "targetPrice must be a positive number or null" }, { status: 400 });
   }
 
-  const updated = await repo.updateTargetPrice(id, targetPrice);
-  return NextResponse.json(updated);
+  try {
+    const updated = await repo.updateTargetPrice(id, targetPrice);
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error(`[PATCH /api/products/${id}/target] Failed:`, err);
+    return NextResponse.json({ error: "Failed to update target price" }, { status: 500 });
+  }
 }

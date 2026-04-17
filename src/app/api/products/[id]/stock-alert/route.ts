@@ -20,6 +20,11 @@ export async function PATCH(
     return NextResponse.json({ error: "trackStock must be a boolean" }, { status: 400 });
   }
 
-  const updated = await repo.updateTrackStock(id, parsed.data.trackStock);
-  return NextResponse.json(updated);
+  try {
+    const updated = await repo.updateTrackStock(id, parsed.data.trackStock);
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error(`[PATCH /api/products/${id}/stock-alert] Failed:`, err);
+    return NextResponse.json({ error: "Failed to update stock alert" }, { status: 500 });
+  }
 }

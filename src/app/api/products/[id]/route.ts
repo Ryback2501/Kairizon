@@ -8,11 +8,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const product = await repo.findById(id);
-  if (!product) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  try {
+    const product = await repo.findById(id);
+    if (!product) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    await repo.delete(id);
+  } catch (err) {
+    console.error(`[DELETE /api/products/${id}] Failed:`, err);
+    return NextResponse.json({ error: "Failed to delete product" }, { status: 500 });
   }
 
-  await repo.delete(id);
   return new NextResponse(null, { status: 204 });
 }

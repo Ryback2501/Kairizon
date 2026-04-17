@@ -9,8 +9,13 @@ const repo = new ProductRepository();
 const scraper = new AmazonScraper();
 
 export async function GET() {
-  const products = await repo.findAll();
-  return NextResponse.json(products);
+  try {
+    const products = await repo.findAll();
+    return NextResponse.json(products);
+  } catch (err) {
+    console.error("[GET /api/products] Failed to fetch products:", err);
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -23,21 +28,37 @@ export async function POST(req: NextRequest) {
   }
 
   const asin = extractAsin(url)!;
-  const existing = await repo.findByAsin(asin);
-  if (existing) {
-    return NextResponse.json({ error: "Product already tracked" }, { status: 409 });
+
+  try {
+    const existing = await repo.findByAsin(asin);
+    if (existing) {
+      return NextResponse.json({ error: "Product already tracked" }, { status: 409 });
+    }
+  } catch (err) {
+    console.error("[POST /api/products] DB lookup failed:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
-  const result = await scraper.scrape(url);
+  let result;
+  try {
+    result = await scraper.scrape(url);
+  } catch (err) {
+    console.error("[POST /api/products] Scraper threw:", err);
+    return NextResponse.json({ error: "Could not fetch product data. Amazon may be blocking the request." }, { status: 422 });
+  }
+
   if (!result) {
     return NextResponse.json({ error: "Could not fetch product data. Amazon may be blocking the request." }, { status: 422 });
   }
 
-  // All sellers selected by default; includeSecondHand enabled by default
-  const excludedSellers: string[] = [];
-  const currentPrice = computePrice(result.sellers, true, excludedSellers);
-  // inStock tracks Amazon's availability specifically
-  const inStock = result.sellers.some((s) => isAmazonSeller(s.name));
-  const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock, sellers: result.sellers, excludedSellers, includeSecondHand: true });
-  return NextResponse.json(product, { status: 201 });
+  try {
+    const excludedSellers: string[] = [];
+    const currentPrice = computePrice(result.sellers, true, excludedSellers);
+    const inStock = result.sellers.some((s) => isAmazonSeller(s.name));
+    const product = await repo.create({ asin: result.asin, title: result.title, image: result.image, url, currentPrice, inStock, sellers: result.sellers, excludedSellers, includeSecondHand: true });
+    return NextResponse.json(product, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/products] Failed to create product:", err);
+    return NextResponse.json({ error: "Failed to save product" }, { status: 500 });
+  }
 }
