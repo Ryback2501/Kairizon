@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
+import { parseBody } from "@/lib/api";
 
 const repo = new ProductRepository();
 
@@ -13,11 +14,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await req.json() as { trackStock?: unknown };
-  if (typeof body.trackStock !== "boolean") {
+  const parsed = await parseBody<{ trackStock?: unknown }>(req);
+  if (!parsed.ok) return parsed.res;
+  if (typeof parsed.data.trackStock !== "boolean") {
     return NextResponse.json({ error: "trackStock must be a boolean" }, { status: 400 });
   }
 
-  const updated = await repo.updateTrackStock(id, body.trackStock);
+  const updated = await repo.updateTrackStock(id, parsed.data.trackStock);
   return NextResponse.json(updated);
 }
