@@ -9,6 +9,11 @@ export async function POST() {
     return NextResponse.json({ error: "Too many requests. Wait a minute before refreshing again." }, { status: 429 });
   }
   allow("refresh");
-  await runUpdate();
+  try {
+    await runUpdate();
+  } catch (err) {
+    console.error("[refresh] Price check failed:", err);
+    return NextResponse.json({ error: "Price check failed" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
