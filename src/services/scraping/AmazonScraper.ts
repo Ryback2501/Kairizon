@@ -33,7 +33,13 @@ export class AmazonScraper implements IScraper {
       return null;
     }
 
-    const browser = await chromium.launch({ headless: true });
+    let browser;
+    try {
+      browser = await chromium.launch({ headless: true });
+    } catch (err) {
+      console.error("[AmazonScraper] Failed to launch browser:", err);
+      return null;
+    }
     try {
       const context = await browser.newContext({
         userAgent:
