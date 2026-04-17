@@ -7,11 +7,14 @@ const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-app.prepare().then(() => {
+app.prepare().then(async () => {
+  // Validate env and DB connectivity before serving any traffic
+  const { validateStartup } = await import("./src/lib/startup");
+  await validateStartup();
+
   // Lazy import to avoid loading Prisma/services before Next.js is ready
-  import("./src/lib/cron").then(({ startPriceCheckCron }) => {
-    startPriceCheckCron(cron);
-  });
+  const { startPriceCheckCron } = await import("./src/lib/cron");
+  startPriceCheckCron(cron);
 
   createServer((req, res) => {
     const parsedUrl = parse(req.url ?? "/", true);
