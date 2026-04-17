@@ -33,9 +33,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Create non-root user
-RUN groupadd --system --gid 1001 nodejs \
-  && useradd --system --uid 1001 --gid nodejs nextjs
+# Create non-root user (--force tolerates GID already existing in the base image)
+RUN groupadd --force --system --gid 1001 nodejs \
+  && (id -u nextjs > /dev/null 2>&1 || useradd --system --uid 1001 --gid nodejs nextjs)
 
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
