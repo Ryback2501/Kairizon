@@ -13,20 +13,11 @@ jobs:
       contents: write
 
     env:
-      DATABASE_URL: file:./test.db
-      NEXTAUTH_SECRET: ci-secret-placeholder
-      NEXTAUTH_URL: http://localhost:3000
-      GOOGLE_CLIENT_ID: placeholder
-      GOOGLE_CLIENT_SECRET: placeholder
-      SMTP_HOST: smtp.example.com
-      SMTP_PORT: "587"
-      SMTP_USER: test@example.com
-      SMTP_PASS: placeholder
-      SMTP_FROM: "Kairizon <test@example.com>"
+      DATABASE_FILE: test.db
       NODE_ENV: production
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           token: ${{ secrets.GH_PAT }}
@@ -49,19 +40,24 @@ jobs:
           git merge ${{ github.sha }} --no-ff -m "release: ${{ github.ref_name }}"
           git push origin main
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
 
       - name: Build
         run: npm run build
+
+      - name: Install Playwright browsers
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: .playwright-browsers
+        run: npx playwright install chromium
 
       - name: Package artifact
         run: |
@@ -70,9 +66,9 @@ jobs:
             dist/ \
             public/ \
             prisma/schema.prisma \
-            prisma/migrations/ \
             package.json \
             package-lock.json \
+            .playwright-browsers/ \
             --exclude "*.map"
 
       - name: Log in to DockerHub
@@ -86,6 +82,7 @@ jobs:
         with:
           context: .
           push: true
+          build-args: PREBUILT=true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/kairizon:${{ github.ref_name }}
             ${{ secrets.DOCKERHUB_USERNAME }}/kairizon:latest
