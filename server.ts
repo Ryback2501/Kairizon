@@ -8,6 +8,16 @@ const port = parseInt(process.env.PORT ?? "3000", 10);
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+process.on("uncaughtException", (err) => {
+  console.error("[server] Uncaught exception:", err);
+  process.exit(1);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[server] Unhandled rejection:", reason);
+  process.exit(1);
+});
+
 app.prepare().then(async () => {
   // Validate env and DB connectivity before serving any traffic
   const { validateStartup } = await import("./src/lib/startup");
@@ -20,6 +30,15 @@ app.prepare().then(async () => {
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url ?? "/", true);
     handle(req, res, parsedUrl);
+  });
+
+  server.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EADDRINUSE") {
+      console.error(`> Port ${port} is already in use`);
+    } else {
+      console.error("[server] HTTP server error:", err);
+    }
+    process.exit(1);
   });
 
   server.listen(port, () => {
