@@ -5,11 +5,12 @@ import { AddProductForm } from "./AddProductForm";
 
 interface HeaderProps {
   onOpenSettings: () => void;
+  onOpenInfo: () => void;
   onAdded: () => void;
   onRefreshed: () => void;
 }
 
-export function Header({ onOpenSettings, onAdded, onRefreshed }: HeaderProps) {
+export function Header({ onOpenSettings, onOpenInfo, onAdded, onRefreshed }: HeaderProps) {
   const [updating, setUpdating] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
@@ -52,6 +53,18 @@ export function Header({ onOpenSettings, onAdded, onRefreshed }: HeaderProps) {
         <div className="h-5 w-px bg-black/10 shrink-0" />
 
         <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onOpenInfo}
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-charcoal text-white hover:opacity-80 transition-opacity"
+            aria-label="App info"
+            title="App info"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="16" x2="12" y2="12" />
+              <line x1="12" y1="8" x2="12.01" y2="8" />
+            </svg>
+          </button>
           <button
             disabled={updating}
             onClick={handleRefreshAll}

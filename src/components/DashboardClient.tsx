@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Header } from "./Header";
 import { ProductList } from "./ProductList";
 import { SettingsModal } from "./SettingsModal";
+import { InfoModal } from "./InfoModal";
 import type { AppSettingsData } from "@/repositories/IAppSettingsRepository";
 import { isSettingsConfigured } from "@/repositories/IAppSettingsRepository";
 
@@ -17,6 +18,7 @@ const EMPTY_SETTINGS: AppSettingsData = {
 
 export function DashboardClient() {
   const [showSettings, setShowSettings] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const [settingsConfigured, setSettingsConfigured] = useState(true);
   const [currentSettings, setCurrentSettings] = useState<AppSettingsData>(EMPTY_SETTINGS);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -43,6 +45,7 @@ export function DashboardClient() {
     <div className="h-screen flex flex-col overflow-hidden">
       <Header
         onOpenSettings={() => setShowSettings(true)}
+        onOpenInfo={() => setShowInfo(true)}
         onAdded={() => setRefreshKey((k) => k + 1)}
         onRefreshed={() => setRefreshKey((k) => k + 1)}
       />
@@ -51,6 +54,7 @@ export function DashboardClient() {
           <ProductList refreshKey={refreshKey} />
         </div>
       </main>
+      {showInfo && <InfoModal onClose={() => setShowInfo(false)} />}
       {showSettings && (
         <SettingsModal
           initialSettings={currentSettings}
