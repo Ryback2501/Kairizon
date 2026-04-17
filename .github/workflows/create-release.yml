@@ -12,10 +12,6 @@ jobs:
     permissions:
       contents: write
 
-    env:
-      DATABASE_FILE: test.db
-      NODE_ENV: production
-
     steps:
       - uses: actions/checkout@v6
         with:
@@ -52,6 +48,8 @@ jobs:
         run: npx prisma generate
 
       - name: Build
+        env:
+          NODE_ENV: production
         run: npm run build
 
       - name: Install Playwright browsers
