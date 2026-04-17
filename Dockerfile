@@ -13,14 +13,18 @@ COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps
 
 # Stage 3: Build
+# When PREBUILT=true (CI release), artifacts are already in the build context —
+# prisma generate still runs but npm run build is skipped.
+# When PREBUILT=false (default, local), the full build runs from source.
 FROM node:24-bookworm-slim AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+ARG PREBUILT=false
 RUN npx prisma generate
-RUN npm run build
+RUN if [ "$PREBUILT" != "true" ]; then npm run build; fi
 
 # Stage 4: Production runner (Playwright base includes Chromium + all system deps)
 FROM mcr.microsoft.com/playwright:v1.59.1-noble AS runner
