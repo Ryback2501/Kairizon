@@ -10,5 +10,10 @@ export function isRateLimited(key: string, cooldownMs: number): boolean {
 }
 
 export function allow(key: string): void {
+  // Evict entries older than 1 hour to prevent unbounded growth
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  for (const [k, t] of lastCall) {
+    if (t < cutoff) lastCall.delete(k);
+  }
   lastCall.set(key, Date.now());
 }

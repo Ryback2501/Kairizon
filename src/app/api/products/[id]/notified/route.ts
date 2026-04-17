@@ -15,7 +15,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "notified must be a boolean" }, { status: 400 });
   }
 
-  await repo.setNotified(id, parsed.data.notified as boolean);
-  const updated = await repo.findById(id);
-  return NextResponse.json(updated);
+  try {
+    await repo.setNotified(id, parsed.data.notified as boolean);
+    const updated = await repo.findById(id);
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error(`[PATCH /api/products/${id}/notified] Failed:`, err);
+    return NextResponse.json({ error: "Failed to update notified flag" }, { status: 500 });
+  }
 }

@@ -22,19 +22,23 @@ export async function PATCH(
     return NextResponse.json({ error: "excludedSellers must be a string array" }, { status: 400 });
   }
 
-  const updated = await repo.updateExcludedSellers(id, parsed.data.excludedSellers as string[]);
-
-  let sellers: Seller[];
-  let excluded: string[];
   try {
-    sellers = JSON.parse(updated.availableSellers) as Seller[];
-    excluded = JSON.parse(updated.excludedSellers) as string[];
-  } catch {
-    return NextResponse.json({ error: "Corrupted seller data" }, { status: 500 });
+    const updated = await repo.updateExcludedSellers(id, parsed.data.excludedSellers as string[]);
+
+    let sellers: Seller[];
+    let excluded: string[];
+    try {
+      sellers = JSON.parse(updated.availableSellers) as Seller[];
+      excluded = JSON.parse(updated.excludedSellers) as string[];
+    } catch {
+      return NextResponse.json({ error: "Corrupted seller data" }, { status: 500 });
+    }
+
+    const currentPrice = computePrice(sellers, updated.includeSecondHand, excluded);
+    const final = await repo.updateCurrentPrice(id, currentPrice);
+    return NextResponse.json(final);
+  } catch (err) {
+    console.error(`[PATCH /api/products/${id}/excluded-sellers] Failed:`, err);
+    return NextResponse.json({ error: "Failed to update excluded sellers" }, { status: 500 });
   }
-
-  const currentPrice = computePrice(sellers, updated.includeSecondHand, excluded);
-  const final = await repo.updateCurrentPrice(id, currentPrice);
-
-  return NextResponse.json(final);
 }

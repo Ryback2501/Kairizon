@@ -53,4 +53,3 @@ prisma/*.db-journal
 data/
 
 # Docker
-.dockerignore
