@@ -1,27 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ProductRepository } from "@/repositories/ProductRepository";
+import { parseBody } from "@/lib/api";
 
 const repo = new ProductRepository();
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const product = await repo.findById(params.id);
+  const { id } = await params;
+  const product = await repo.findById(id);
   if (!product) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const body = await req.json() as { targetPrice?: unknown };
+  const parsed = await parseBody<{ targetPrice?: unknown }>(req);
+  if (!parsed.ok) return parsed.res;
+  const { targetPrice: rawTargetPrice } = parsed.data;
   const targetPrice =
-    body.targetPrice === null ? null
-    : typeof body.targetPrice === "number" && body.targetPrice > 0 ? body.targetPrice
+    rawTargetPrice === null ? null
+    : typeof rawTargetPrice === "number" && rawTargetPrice > 0 ? rawTargetPrice
     : undefined;
 
   if (targetPrice === undefined) {
     return NextResponse.json({ error: "targetPrice must be a positive number or null" }, { status: 400 });
   }
 
-  const updated = await repo.updateTargetPrice(params.id, targetPrice);
-  return NextResponse.json(updated);
+  try {
+    const updated = await repo.updateTargetPrice(id, targetPrice);
+    return NextResponse.json(updated);
+  } catch (err) {
+    console.error(`[PATCH /api/products/${id}/target] Failed:`, err);
+    return NextResponse.json({ error: "Failed to update target price" }, { status: 500 });
+  }
 }

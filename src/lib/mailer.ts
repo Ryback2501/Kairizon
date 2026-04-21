@@ -1,13 +1,14 @@
 import nodemailer from "nodemailer";
+import type { AppSettingsData } from "@/repositories/IAppSettingsRepository";
 
-export function createTransporter() {
+export function createTransporter(settings: AppSettingsData) {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_PORT === "465",
+    host: settings.smtpHost,
+    port: settings.smtpPort,
+    secure: settings.smtpPort === 465,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: settings.smtpUser,
+      pass: settings.smtpPass,
     },
   });
 }

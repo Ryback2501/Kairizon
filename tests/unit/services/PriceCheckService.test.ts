@@ -3,6 +3,7 @@ import type { INotificationService } from "@/services/notification/INotification
 import type { IProductRepository } from "@/repositories/IProductRepository";
 import { PriceCheckService } from "@/services/price-check/PriceCheckService";
 import type { Product } from "@prisma/client";
+import type { Seller } from "@/types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -19,21 +20,29 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     trackStock: false,
     stockNotified: false,
     includeSecondHand: false,
+    availableSellers: "[]",
+    excludedSellers: "[]",
     createdAt: new Date(),
     ...overrides,
   };
 }
 
 function makeScrapeResult(
-  overrides: Partial<{ currentPrice: number | null; inStock: boolean }> = {}
+  overrides: Partial<{ currentPrice: number | null; inStock: boolean; sellers: Seller[] }> = {}
 ) {
+  const price = overrides.currentPrice ?? 50;
+  // Default seller is Amazon — inStock is now derived from Amazon's presence in sellers
+  const sellers: Seller[] = overrides.sellers ?? (
+    price !== null
+      ? [{ name: "Amazon", price, shipping: 0, isSecondHand: false }]
+      : []
+  );
   return {
     asin: "B00TEST1234",
     title: "Test Product",
     image: null,
-    currentPrice: 50,
-    inStock: true,
-    ...overrides,
+    sellers,
+    inStock: overrides.inStock ?? true,
   };
 }
 
@@ -50,6 +59,8 @@ function makeMocks() {
     updateTargetPrice: jest.fn(),
     updateTrackStock: jest.fn(),
     updateIncludeSecondHand: jest.fn(),
+    updateExcludedSellers: jest.fn(),
+    updateCurrentPrice: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -69,7 +80,7 @@ describe("PriceCheckService", () => {
   it("sends a price alert when price drops to or below target", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ currentPrice: 50, targetPrice: 40, notified: false });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 38, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -83,7 +94,7 @@ describe("PriceCheckService", () => {
   it("does not send price alert if already notified", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ currentPrice: 38, targetPrice: 40, notified: true });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 35, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -94,7 +105,7 @@ describe("PriceCheckService", () => {
   it("resets notified flag when price rises back above target", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ currentPrice: 38, targetPrice: 40, notified: true });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 55, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -111,7 +122,7 @@ describe("PriceCheckService", () => {
       stockNotified: false,
       targetPrice: null,
     });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 50, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -130,7 +141,7 @@ describe("PriceCheckService", () => {
       stockNotified: false,
       targetPrice: null,
     });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 50, inStock: true }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -146,8 +157,9 @@ describe("PriceCheckService", () => {
       stockNotified: false,
       targetPrice: null,
     });
-    repo.findAllWithTargets.mockResolvedValue([product]);
-    scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: null, inStock: false }));
+    repo.findAll.mockResolvedValue([product]);
+    // Empty sellers = Amazon is out of stock (no Amazon entry in the list)
+    scraper.scrape.mockResolvedValue(makeScrapeResult({ sellers: [] }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
 
@@ -157,7 +169,7 @@ describe("PriceCheckService", () => {
 
   it("skips product when scraper returns null", async () => {
     const { repo, scraper, notifier } = makeMocks();
-    repo.findAllWithTargets.mockResolvedValue([makeProduct()]);
+    repo.findAll.mockResolvedValue([makeProduct()]);
     scraper.scrape.mockResolvedValue(null);
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
@@ -169,11 +181,85 @@ describe("PriceCheckService", () => {
   it("does not alert when price has no target set", async () => {
     const { repo, scraper, notifier } = makeMocks();
     const product = makeProduct({ targetPrice: null });
-    repo.findAllWithTargets.mockResolvedValue([product]);
+    repo.findAll.mockResolvedValue([product]);
     scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 10 }));
 
     await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
 
     expect(notifier.sendPriceAlert).not.toHaveBeenCalled();
+  });
+
+  it("does not send price alert when currentPrice is null", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({ currentPrice: 50, targetPrice: 40, notified: false });
+    repo.findAll.mockResolvedValue([product]);
+    // No sellers → computePrice returns null
+    scraper.scrape.mockResolvedValue(makeScrapeResult({ sellers: [] }));
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(notifier.sendPriceAlert).not.toHaveBeenCalled();
+  });
+
+  it("resets stockNotified after a full in-stock cycle", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({
+      inStock: true,
+      trackStock: true,
+      stockNotified: true,
+      targetPrice: null,
+    });
+    repo.findAll.mockResolvedValue([product]);
+    scraper.scrape.mockResolvedValue(makeScrapeResult({ currentPrice: 50, inStock: true }));
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(repo.setStockNotified).toHaveBeenCalledWith("prod-1", false, true);
+    expect(notifier.sendStockAlert).not.toHaveBeenCalled();
+  });
+
+  it("auto-excludes new second-hand sellers when includeSecondHand is false", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({
+      includeSecondHand: false,
+      excludedSellers: "[]",
+      targetPrice: null,
+    });
+    repo.findAll.mockResolvedValue([product]);
+    repo.updateExcludedSellers.mockResolvedValue(product);
+    scraper.scrape.mockResolvedValue(
+      makeScrapeResult({
+        sellers: [
+          { name: "Amazon", price: 50, shipping: 0, isSecondHand: false },
+          { name: "UsedSeller", price: 20, shipping: 0, isSecondHand: true },
+        ],
+      })
+    );
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(repo.updateExcludedSellers).toHaveBeenCalledWith("prod-1", ["UsedSeller"]);
+  });
+
+  it("skips updateExcludedSellers when second-hand seller is already excluded", async () => {
+    const { repo, scraper, notifier } = makeMocks();
+    const product = makeProduct({
+      includeSecondHand: false,
+      excludedSellers: JSON.stringify(["UsedSeller"]),
+      targetPrice: null,
+    });
+    repo.findAll.mockResolvedValue([product]);
+    scraper.scrape.mockResolvedValue(
+      makeScrapeResult({
+        sellers: [
+          { name: "Amazon", price: 50, shipping: 0, isSecondHand: false },
+          { name: "UsedSeller", price: 20, shipping: 0, isSecondHand: true },
+        ],
+      })
+    );
+
+    await new PriceCheckService(repo, scraper, notifier).runPriceCheck();
+
+    expect(repo.updateExcludedSellers).not.toHaveBeenCalled();
   });
 });

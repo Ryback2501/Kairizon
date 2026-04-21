@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model AppSettings {
+  id       String @id @default("singleton")
+  smtpHost String @default("")
+  smtpPort Int    @default(587)
+  smtpUser String @default("")
+  smtpPass String @default("")
+  smtpFrom String @default("")
+}
+
 model Product {
   id            String    @id @default(cuid())
   asin          String    @unique
@@ -20,6 +29,8 @@ model Product {
   inStock       Boolean   @default(true)
   trackStock          Boolean   @default(false)
   stockNotified       Boolean   @default(false)
-  includeSecondHand   Boolean   @default(false)
+  includeSecondHand   Boolean   @default(true)
+  availableSellers    String    @default("[]")
+  excludedSellers     String    @default("[]")
   createdAt           DateTime  @default(now())
 }

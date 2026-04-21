@@ -1,4 +1,4 @@
-import { extractAsin, isValidAmazonUrl, buildAmazonUrl } from "@/lib/amazon";
+import { extractAsin, isValidAmazonUrl, buildScrapeUrl } from "@/lib/amazon";
 
 describe("extractAsin", () => {
   it("extracts ASIN from /dp/ URL", () => {
@@ -50,16 +50,31 @@ describe("isValidAmazonUrl", () => {
   });
 });
 
-describe("buildAmazonUrl", () => {
-  it("builds a canonical Amazon product URL", () => {
-    expect(buildAmazonUrl("B08N5WRWNW")).toBe(
-      "https://www.amazon.com/dp/B08N5WRWNW"
+describe("buildScrapeUrl", () => {
+  it("builds an AOD URL with aod and th query params", () => {
+    expect(buildScrapeUrl("https://www.amazon.com/dp/B08N5WRWNW")).toBe(
+      "https://www.amazon.com/dp/B08N5WRWNW?aod=1&th=1"
     );
   });
 
-  it("uses a custom domain", () => {
-    expect(buildAmazonUrl("B08N5WRWNW", "amazon.co.uk")).toBe(
-      "https://www.amazon.co.uk/dp/B08N5WRWNW"
+  it("strips existing query params and replaces with aod params", () => {
+    expect(
+      buildScrapeUrl("https://www.amazon.com/Some-Title/dp/B08N5WRWNW?ref=sr_1_1&psc=1")
+    ).toBe("https://www.amazon.com/dp/B08N5WRWNW?aod=1&th=1");
+  });
+
+  it("preserves the original domain (e.g. amazon.co.uk)", () => {
+    expect(buildScrapeUrl("https://www.amazon.co.uk/dp/B08N5WRWNW")).toBe(
+      "https://www.amazon.co.uk/dp/B08N5WRWNW?aod=1&th=1"
     );
+  });
+
+  it("returns the original URL when no ASIN can be extracted", () => {
+    const url = "https://www.amazon.com/s?k=headphones";
+    expect(buildScrapeUrl(url)).toBe(url);
+  });
+
+  it("returns the original input when URL is invalid", () => {
+    expect(buildScrapeUrl("not-a-url")).toBe("not-a-url");
   });
 });

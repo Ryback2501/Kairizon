@@ -15,30 +15,21 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: file:./test.db
-      NEXTAUTH_SECRET: ci-secret-placeholder
-      NEXTAUTH_URL: http://localhost:3000
-      GOOGLE_CLIENT_ID: placeholder
-      GOOGLE_CLIENT_SECRET: placeholder
-      SMTP_HOST: smtp.example.com
-      SMTP_PORT: "587"
-      SMTP_USER: test@example.com
-      SMTP_PASS: placeholder
-      SMTP_FROM: "Kairizon <test@example.com>"
+      DATABASE_FILE: test.db
       NODE_ENV: test
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: npm ci
 
       - name: Generate Prisma client
         run: npx prisma generate
@@ -48,6 +39,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Set DATABASE_URL
+        run: echo "DATABASE_URL=file:./data/$DATABASE_FILE" >> $GITHUB_ENV
 
       - name: Run database migrations
         run: npx prisma db push --force-reset

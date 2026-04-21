@@ -8,17 +8,25 @@ interface ToggleProps {
 }
 
 export function Toggle({ checked, onChange, label, disabled }: ToggleProps) {
+  // Three distinct visual states:
+  //   disabled  → bg-black/10 (light, transparent — matches old unchecked look)
+  //   unchecked → bg-gray-400 (visible mid-gray, clearly interactive but off)
+  //   checked   → bg-brand-charcoal (dark)
+  const trackColor = disabled
+    ? "bg-black/10 cursor-not-allowed"
+    : checked
+    ? "bg-brand-charcoal"
+    : "bg-gray-400";
+
   return (
-    <label className="flex items-center gap-2 cursor-pointer select-none">
+    <label className={`flex items-center gap-2 select-none ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-          checked ? "bg-brand-charcoal" : "bg-black/10"
-        }`}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${trackColor}`}
       >
         <span
           className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform ${

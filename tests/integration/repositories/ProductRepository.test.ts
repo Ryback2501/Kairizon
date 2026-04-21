@@ -64,7 +64,7 @@ describe("ProductRepository", () => {
   });
 
   it("updates price and stock", async () => {
-    await repo.updatePriceAndStock(productId, 44.99, true);
+    await repo.updatePriceAndStock(productId, 44.99, true, []);
     const product = await repo.findById(productId);
     expect(product?.currentPrice).toBe(44.99);
     expect(product?.inStock).toBe(true);
@@ -87,6 +87,40 @@ describe("ProductRepository", () => {
   it("updates trackStock", async () => {
     const updated = await repo.updateTrackStock(productId, true);
     expect(updated.trackStock).toBe(true);
+  });
+
+  it("updates includeSecondHand", async () => {
+    const updated = await repo.updateIncludeSecondHand(productId, true);
+    expect(updated.includeSecondHand).toBe(true);
+  });
+
+  it("updates excludedSellers (round-trips JSON)", async () => {
+    const sellers = ["SellerA", "SellerB"];
+    const updated = await repo.updateExcludedSellers(productId, sellers);
+    expect(JSON.parse(updated.excludedSellers)).toEqual(sellers);
+  });
+
+  it("updates currentPrice", async () => {
+    const updated = await repo.updateCurrentPrice(productId, 29.99);
+    expect(updated.currentPrice).toBe(29.99);
+  });
+
+  it("updates currentPrice to null", async () => {
+    const updated = await repo.updateCurrentPrice(productId, null);
+    expect(updated.currentPrice).toBeNull();
+  });
+
+  it("rejects duplicate ASIN", async () => {
+    await expect(
+      repo.create({
+        asin: "B00TESTINT1",
+        title: "Duplicate",
+        image: null,
+        url: "https://www.amazon.com/dp/B00TESTINT1",
+        currentPrice: 9.99,
+        inStock: true,
+      })
+    ).rejects.toThrow();
   });
 
   it("deletes a product", async () => {
