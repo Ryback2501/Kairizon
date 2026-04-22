@@ -27,10 +27,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Create non-root user (--force/--non-unique tolerate GID/UID already existing in the base image)
-RUN groupadd --force --system --gid 1001 nodejs \
-  && (id -u nextjs > /dev/null 2>&1 || useradd --non-unique --system --uid 1001 --gid nodejs nextjs)
-
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
@@ -38,10 +34,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data \
-  && chown -R nextjs:nodejs /app/node_modules/@prisma /app/node_modules/.prisma /app/node_modules/prisma
-
-USER nextjs
+RUN mkdir -p /app/data
 
 EXPOSE 3000
 
