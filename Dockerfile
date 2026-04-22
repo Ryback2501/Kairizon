@@ -38,4 +38,4 @@ RUN mkdir -p /app/data
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && ./node_modules/.bin/prisma db push --skip-generate && node dist/server.js"]
+CMD ["sh", "-c", "export DATABASE_URL=file:/app/data/${DATABASE_FILE:-kairizon.db} && ./node_modules/.bin/prisma db push --skip-generate && node dist/server.js"]
