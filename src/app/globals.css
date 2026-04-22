@@ -2,14 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: "Cal Sans";
-  src: url("/fonts/CalSans-SemiBold.woff2") format("woff2");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-
 @layer base {
   html,
   body {
@@ -25,7 +17,7 @@
   h2,
   h3,
   h4 {
-    font-family: "Cal Sans", "Inter", sans-serif;
+    font-family: "Inter", sans-serif;
     font-weight: 600;
   }
 }
