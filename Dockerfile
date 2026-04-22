@@ -38,7 +38,8 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+RUN mkdir -p /app/data && chown nextjs:nodejs /app/data \
+  && chown -R nextjs:nodejs /app/node_modules/@prisma/engines /app/node_modules/.prisma
 
 USER nextjs
 
