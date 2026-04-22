@@ -39,10 +39,10 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/dist ./dist
 
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data \
-  && chown -R nextjs:nodejs /app/node_modules/@prisma/engines /app/node_modules/.prisma
+  && chown -R nextjs:nodejs /app/node_modules/@prisma /app/node_modules/.prisma /app/node_modules/prisma
 
 USER nextjs
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && ./node_modules/.bin/prisma db push && node dist/server.js"]
+CMD ["sh", "-c", "export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && ./node_modules/.bin/prisma db push --skip-generate && node dist/server.js"]
