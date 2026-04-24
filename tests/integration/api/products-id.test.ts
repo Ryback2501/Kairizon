@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { ProductRepository } from "@/repositories/ProductRepository";
 
 import { DELETE } from "@/app/api/products/[id]/route";
@@ -9,7 +9,6 @@ import { PATCH as patchStockAlert } from "@/app/api/products/[id]/stock-alert/ro
 import { PATCH as patchSecondHand } from "@/app/api/products/[id]/second-hand/route";
 import { PATCH as patchExcludedSellers } from "@/app/api/products/[id]/excluded-sellers/route";
 
-const prisma = new PrismaClient();
 const repo = new ProductRepository();
 const TEST_ASIN = "B00INTPID1";
 let productId: string;
@@ -33,8 +32,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.product.deleteMany({ where: { asin: TEST_ASIN } });
-  await prisma.$disconnect();
+  await db.product.deleteMany({ where: { asin: TEST_ASIN } });
+  await db.$disconnect();
 });
 
 function makeReq(body: unknown): NextRequest {

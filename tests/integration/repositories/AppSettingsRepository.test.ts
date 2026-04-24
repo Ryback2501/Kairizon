@@ -1,18 +1,16 @@
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { AppSettingsRepository } from "@/repositories/AppSettingsRepository";
 
-const prisma = new PrismaClient();
-
 afterAll(async () => {
-  await prisma.appSettings.deleteMany({ where: { id: "singleton" } });
-  await prisma.$disconnect();
+  await db.appSettings.deleteMany({ where: { id: "singleton" } });
+  await db.$disconnect();
 });
 
 describe("AppSettingsRepository", () => {
   const repo = new AppSettingsRepository();
 
   it("get() creates the singleton row with empty defaults on first call", async () => {
-    await prisma.appSettings.deleteMany({ where: { id: "singleton" } });
+    await db.appSettings.deleteMany({ where: { id: "singleton" } });
     const settings = await repo.get();
     expect(settings.smtpHost).toBe("");
     expect(settings.smtpPort).toBe(587);
