@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Product } from "@prisma/client";
 import { ProductCard } from "./ProductCard";
 
@@ -12,18 +12,17 @@ export function ProductList({ refreshKey }: ProductListProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchProducts = useCallback(async () => {
-    const res = await fetch("/api/products");
-    if (res.ok) {
-      const data = await res.json() as Product[];
-      setProducts(data);
-    }
-    setLoading(false);
-  }, []);
-
   useEffect(() => {
+    async function fetchProducts() {
+      const res = await fetch("/api/products");
+      if (res.ok) {
+        const data = await res.json() as Product[];
+        setProducts(data);
+      }
+      setLoading(false);
+    }
     void fetchProducts();
-  }, [fetchProducts, refreshKey]);
+  }, [refreshKey]);
 
   function handleDeleted(id: string) {
     setProducts((prev) => prev.filter((p) => p.id !== id));

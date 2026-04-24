@@ -1,11 +1,9 @@
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { ProductRepository } from "@/repositories/ProductRepository";
 
-const prisma = new PrismaClient();
-
 afterAll(async () => {
-  await prisma.product.deleteMany({ where: { asin: "B00TESTINT1" } });
-  await prisma.$disconnect();
+  await db.product.deleteMany({ where: { asin: "B00TESTINT1" } });
+  await db.$disconnect();
 });
 
 describe("ProductRepository", () => {

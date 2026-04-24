@@ -1,13 +1,11 @@
 import { NextRequest } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
 import { GET, PUT } from "@/app/api/settings/route";
 
-const prisma = new PrismaClient();
-
 afterAll(async () => {
-  await prisma.appSettings.deleteMany({ where: { id: "singleton" } });
-  await prisma.$disconnect();
+  await db.appSettings.deleteMany({ where: { id: "singleton" } });
+  await db.$disconnect();
 });
 
 describe("GET /api/settings", () => {
