@@ -1,5 +1,4 @@
 import { createServer } from "http";
-import { parse } from "url";
 import next from "next";
 import cron from "node-cron";
 
@@ -28,8 +27,7 @@ app.prepare().then(async () => {
   startPriceCheckCron(cron);
 
   const server = createServer((req, res) => {
-    const parsedUrl = parse(req.url ?? "/", true);
-    handle(req, res, parsedUrl);
+    handle(req, res);
   });
 
   server.on("error", (err: NodeJS.ErrnoException) => {
