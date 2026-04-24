@@ -1,9 +1,11 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaLibSql } from "@prisma/adapter-libsql";
 
 const TEST_ASIN = "B00E2ETEST1";
 
 export default async function globalSetup() {
-  const prisma = new PrismaClient();
+  const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL ?? "" });
+  const prisma = new PrismaClient({ adapter });
   try {
     // Configure SMTP so the settings modal does not block the UI
     await prisma.appSettings.upsert({
