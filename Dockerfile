@@ -48,6 +48,7 @@ RUN find /app/node_modules/@next -name "*.node" -delete
 RUN find /app/node_modules -name "libquery_engine-debian*" -delete
 
 COPY --from=builder /app/.next ./.next
+RUN rm -rf /app/.next/dev /app/.next/cache
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
