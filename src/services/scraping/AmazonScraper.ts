@@ -1,4 +1,4 @@
-import { chromium } from "playwright";
+import { chromium } from "playwright-core";
 import { extractAsin, buildScrapeUrl } from "@/lib/amazon";
 import { deduplicateSellers } from "@/lib/pricing";
 import type { IScraper } from "./IScraper";
@@ -35,7 +35,12 @@ export class AmazonScraper implements IScraper {
 
     let browser;
     try {
-      browser = await chromium.launch({ headless: true });
+      const executablePath = process.env.CHROMIUM_EXECUTABLE_PATH;
+      browser = await chromium.launch({
+        headless: true,
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        ...(executablePath ? { executablePath } : {}),
+      });
     } catch (err) {
       console.error("[AmazonScraper] Failed to launch browser:", err);
       return null;
