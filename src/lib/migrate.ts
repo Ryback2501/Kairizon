@@ -31,26 +31,12 @@ const SCHEMA_SQL = [
   `CREATE UNIQUE INDEX IF NOT EXISTS "Product_asin_key" ON "Product"("asin")`,
 ];
 
-// Columns added after the initial schema — silently ignored if already present
-const BACKFILL_COLUMNS = [
-  `ALTER TABLE "Product" ADD COLUMN "trackStock" BOOLEAN NOT NULL DEFAULT false`,
-  `ALTER TABLE "Product" ADD COLUMN "stockNotified" BOOLEAN NOT NULL DEFAULT false`,
-  `ALTER TABLE "Product" ADD COLUMN "includeSecondHand" BOOLEAN NOT NULL DEFAULT true`,
-  `ALTER TABLE "Product" ADD COLUMN "availableSellers" TEXT NOT NULL DEFAULT '[]'`,
-  `ALTER TABLE "Product" ADD COLUMN "excludedSellers" TEXT NOT NULL DEFAULT '[]'`,
-];
-
 export async function runMigrations(): Promise<void> {
   const url = process.env.DATABASE_URL ?? "";
   const client = createClient({ url });
   try {
     for (const sql of SCHEMA_SQL) {
       await client.execute(sql);
-    }
-    for (const sql of BACKFILL_COLUMNS) {
-      await client.execute(sql).catch(() => {
-        // duplicate column — already applied
-      });
     }
     console.log("[migrate] Schema up to date");
   } finally {
