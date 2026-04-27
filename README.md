@@ -3,7 +3,7 @@
 [![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/-Claude_Code-000000?logo=claude&logoColor=white)](https://claude.ai/code)
 [![GitHub Release](https://img.shields.io/github/v/release/Ryback2501/Kairizon)](https://github.com/Ryback2501/Kairizon/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/Ryback2501/Kairizon/promote-dev-to-test.yml?branch=dev&label=build)](https://github.com/Ryback2501/Kairizon/actions/workflows/promote-dev-to-test.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/Ryback2501/Kairizon/create-release.yml?label=release)](https://github.com/Ryback2501/Kairizon/actions/workflows/create-release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker Hub](https://img.shields.io/badge/docker-ryback2501%2Fkairizon-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/ryback2501/kairizon)
 [![Docker Pulls](https://img.shields.io/docker/pulls/ryback2501/kairizon?logo=docker&logoColor=white)](https://hub.docker.com/r/ryback2501/kairizon)
@@ -124,17 +124,17 @@ docker stop kairizon && docker rm kairizon
 
 Your data is safe in `./data/` — it is not stored inside the container.
 
-## Planned improvements
-
-- Reduce Docker image size by using only production dependencies in the final image
-
 ## Contributing
 
 Contributions and ideas are welcome. The repository is public and anyone can fork it and open a pull request.
+
+If you have a suggestion, found a bug, or want to discuss a change before implementing it, [open an issue](https://github.com/Ryback2501/Kairizon/issues) — it's the best place to start.
+
+To contribute code:
 
 1. Fork the repository
 2. Create a branch from `dev`: `git checkout -b feat/your-feature`
 3. Make your changes and commit following [Conventional Commits](https://www.conventionalcommits.org/)
 4. Open a pull request targeting the `dev` branch
 
-Please keep PRs focused — one feature or fix per PR. If you are planning a larger change, open an issue first to discuss it.
+Please keep PRs focused — one feature or fix per PR.
