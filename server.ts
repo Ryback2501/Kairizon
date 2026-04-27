@@ -18,7 +18,10 @@ process.on("unhandledRejection", (reason) => {
 });
 
 app.prepare().then(async () => {
-  // Validate env and DB connectivity before serving any traffic
+  // Apply schema migrations, then validate DB connectivity
+  const { runMigrations } = await import("./src/lib/migrate");
+  await runMigrations();
+
   const { validateStartup } = await import("./src/lib/startup");
   await validateStartup();
 
