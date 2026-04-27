@@ -1,5 +1,5 @@
 # Stage 1: All dependencies (needed for build)
-FROM node:24-bookworm-slim AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -9,7 +9,7 @@ RUN npm ci --legacy-peer-deps
 # When PREBUILT=true (CI release), artifacts are already in the build context —
 # prisma generate still runs but npm run build is skipped.
 # When PREBUILT=false (default, local), the full build runs from source.
-FROM node:24-bookworm-slim AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -21,24 +21,25 @@ RUN if [ "$PREBUILT" != "true" ]; then npm run build; fi
 RUN mkdir -p public
 
 # Stage 3: Production-only node_modules
-FROM node:24-bookworm-slim AS prod-deps
+FROM node:24-alpine AS prod-deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --legacy-peer-deps
 COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
 RUN ./node_modules/.bin/prisma generate
 
-# Stage 4: Production runner (slim Node + Chromium only)
-FROM node:24-bookworm-slim AS runner
+# Stage 4: Production runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+ENV CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+RUN apk add --no-cache chromium
 
 COPY --from=prod-deps /app/node_modules ./node_modules
-RUN ./node_modules/.bin/playwright install --with-deps chromium
-
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
