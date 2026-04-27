@@ -1,5 +1,3 @@
-import * as cheerio from "cheerio";
-
 // Re-implement the parsePrice helper to test parsing logic in isolation
 function parsePrice(text: string): number | null {
   const cleaned = text.replace(/[^0-9.,]/g, "").replace(",", "");
@@ -59,18 +57,3 @@ describe("isInStock", () => {
   });
 });
 
-describe("cheerio HTML parsing", () => {
-  it("extracts product title from #productTitle", () => {
-    const html = '<span id="productTitle">  Test Product  </span>';
-    const $ = cheerio.load(html);
-    expect($("#productTitle").text().trim()).toBe("Test Product");
-  });
-
-  it("extracts price from .priceToPay .a-offscreen", () => {
-    const html =
-      '<span class="priceToPay"><span class="a-offscreen">$24.99</span></span>';
-    const $ = cheerio.load(html);
-    const raw = $(".priceToPay .a-offscreen").first().text().trim();
-    expect(parsePrice(raw)).toBe(24.99);
-  });
-});

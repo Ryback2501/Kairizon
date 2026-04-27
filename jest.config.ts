@@ -11,6 +11,9 @@ const config: Config = {
   collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.d.ts"],
   testPathIgnorePatterns: ["/node_modules/", "/tests/e2e/"],
   passWithNoTests: true,
+  transform: {
+    "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.test.json" }],
+  },
 };
 
 export default config;

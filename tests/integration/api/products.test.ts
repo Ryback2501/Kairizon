@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
 const mockScrape = jest.fn();
 
@@ -9,12 +9,11 @@ jest.mock("@/services/scraping/AmazonScraper", () => ({
 
 import { GET, POST } from "@/app/api/products/route";
 
-const prisma = new PrismaClient();
 const TEST_ASIN = "B00INTAPI1";
 
 afterAll(async () => {
-  await prisma.product.deleteMany({ where: { asin: TEST_ASIN } });
-  await prisma.$disconnect();
+  await db.product.deleteMany({ where: { asin: TEST_ASIN } });
+  await db.$disconnect();
 });
 
 beforeEach(() => mockScrape.mockReset());

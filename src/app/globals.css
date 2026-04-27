@@ -1,6 +1,49 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-brand-canvas: #ffffff;
+  --color-brand-charcoal: #242424;
+  --color-brand-midnight: #111111;
+  --color-brand-gray: #898989;
+  --color-brand-subtle: #d4d4d4;
+
+  --font-cal: Cal Sans, Inter, sans-serif;
+  --font-inter: Inter, sans-serif;
+
+  --shadow-card:
+    rgba(19, 19, 22, 0.7) 0px 1px 5px -4px,
+    rgba(34, 42, 53, 0.05) 0px 4px 8px 0px;
+  --shadow-card-hover:
+    rgba(19, 19, 22, 0.7) 0px 2px 8px -4px,
+    rgba(34, 42, 53, 0.12) 0px 0px 0px 1px,
+    rgba(34, 42, 53, 0.08) 0px 8px 16px 0px;
+  --shadow-button-inset: rgba(255, 255, 255, 0.15) 0px 2px 0px inset;
+  --shadow-input: rgba(0, 0, 0, 0.16) 0px 1px 1.9px 0px inset;
+
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 @layer base {
   html,

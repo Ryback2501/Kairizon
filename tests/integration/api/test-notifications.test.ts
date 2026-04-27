@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 import { ProductRepository } from "@/repositories/ProductRepository";
 
 const mockSendPriceAlert = jest.fn().mockResolvedValue(undefined);
@@ -18,7 +18,6 @@ jest.mock("@/lib/rate-limit", () => ({
 
 import { POST } from "@/app/api/test-notifications/route";
 
-const prisma = new PrismaClient();
 const repo = new ProductRepository();
 const TEST_ASIN = "B00INTTFN1";
 
@@ -34,8 +33,8 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await prisma.product.deleteMany({ where: { asin: TEST_ASIN } });
-  await prisma.$disconnect();
+  await db.product.deleteMany({ where: { asin: TEST_ASIN } });
+  await db.$disconnect();
 });
 
 beforeEach(() => {
