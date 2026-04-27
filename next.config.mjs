@@ -8,7 +8,7 @@ const config = {
       { protocol: "https", hostname: "images-amazon.com" },
     ],
   },
-  serverExternalPackages: ["node-cron", "nodemailer"],
+  serverExternalPackages: ["node-cron", "nodemailer", "playwright-core"],
 };
 
 export default config;
