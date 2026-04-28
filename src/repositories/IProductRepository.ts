@@ -5,8 +5,6 @@ export interface IProductRepository {
   findAll(): Promise<Product[]>;
   findById(id: string): Promise<Product | null>;
   findByAsin(asin: string): Promise<Product | null>;
-  /** Returns only products that have a target price set. Used in tests; reserved for future filtering. */
-  findAllWithTargets(): Promise<Product[]>;
   create(data: {
     asin: string;
     title: string;

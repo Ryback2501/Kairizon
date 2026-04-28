@@ -68,6 +68,17 @@ describe("renderTemplate", () => {
     expect(result).toBe("Hello Alice {{UNKNOWN}}");
   });
 
+  it("escapes HTML special characters in placeholder values", () => {
+    mockReadFileSync.mockReturnValue("{{TITLE}}");
+    const { renderTemplate } = require("@/lib/email-templates");
+    const result = renderTemplate("email-price-alert.html", {
+      TITLE: '<script>alert("xss&\'test\'");</script>',
+    });
+    expect(result).toBe(
+      "&lt;script&gt;alert(&quot;xss&amp;&#39;test&#39;&quot;);&lt;/script&gt;"
+    );
+  });
+
   it("reads from the correct data directory", () => {
     mockReadFileSync.mockReturnValue("");
     const { renderTemplate } = require("@/lib/email-templates");

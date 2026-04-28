@@ -145,16 +145,14 @@ The two HTML template files are created automatically on first startup with a de
 
 **Backups**
 
-All data lives in a single SQLite file. Back it up by copying the `*.db` file at `./data/` or the folder you defined in the Docker command.
+You can bak up your data by copying the files at the folder you defined in the Docker command with the `-v` property.
 
-**Updating**
+**Updating the Docker image**
 ```bash
 docker pull ryback2501/kairizon:latest
 docker stop kairizon && docker rm kairizon
 # re-run the docker run command above
 ```
-
-Your data is safe in `./data/` — it is not stored inside the container.
 
 ## Contributing
 

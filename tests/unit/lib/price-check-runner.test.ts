@@ -73,4 +73,21 @@ describe("runUpdate", () => {
     await runUpdate();
     expect(shouldSkip()).toBe(true);
   });
+
+  it("skips concurrent run — second call while first is in progress does not call runPriceCheck again", async () => {
+    let resolveFirst!: () => void;
+    mockRunPriceCheck.mockReturnValueOnce(
+      new Promise<void>((resolve) => { resolveFirst = resolve; })
+    );
+
+    const { runUpdate } = await import("@/lib/price-check-runner");
+    const first = runUpdate();
+    const second = runUpdate(); // should return immediately — isRunning is true
+    await second;
+
+    expect(mockRunPriceCheck).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+    await first;
+  });
 });

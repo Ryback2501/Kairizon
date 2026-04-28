@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid Amazon product URL" }, { status: 400 });
   }
 
-  const asin = extractAsin(url)!;
+  const asin = extractAsin(url);
+  if (!asin) return NextResponse.json({ error: "Invalid Amazon product URL" }, { status: 400 });
 
   try {
     const existing = await repo.findByAsin(asin);

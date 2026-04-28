@@ -12,12 +12,18 @@ const service = new PriceCheckService(
 );
 
 let lastFullUpdate: Date | null = null;
+let isRunning = false;
 
 export function shouldSkip(): boolean {
   return lastFullUpdate !== null && Date.now() - lastFullUpdate.getTime() < 5 * 60 * 1000;
 }
 
 export async function runUpdate(): Promise<void> {
+  if (isRunning) {
+    console.log("[price-check-runner] Skipping: a run is already in progress");
+    return;
+  }
+  isRunning = true;
   cronStatus.currentlyRunning = true;
   const start = Date.now();
   try {
@@ -32,6 +38,7 @@ export async function runUpdate(): Promise<void> {
     cronStatus.lastRunSuccess = false;
     throw err;
   } finally {
+    isRunning = false;
     cronStatus.currentlyRunning = false;
   }
 }

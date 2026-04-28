@@ -54,13 +54,6 @@ describe("ProductRepository", () => {
     expect(updated.notified).toBe(false);
   });
 
-  it("finds products with targets (for cron)", async () => {
-    const products = await repo.findAllWithTargets();
-    const found = products.find((p) => p.id === productId);
-    expect(found).toBeDefined();
-    expect(found!.targetPrice).not.toBeNull();
-  });
-
   it("updates price and stock", async () => {
     await repo.updatePriceAndStock(productId, 44.99, true, []);
     const product = await repo.findById(productId);
