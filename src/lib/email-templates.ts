@@ -75,10 +75,19 @@ export function ensureEmailTemplates(): void {
   }
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function renderTemplate(filename: string, vars: Record<string, string>): string {
   const tpl = fs.readFileSync(path.join(getDataDir(), filename), "utf-8");
   return Object.entries(vars).reduce(
-    (html, [k, v]) => html.replaceAll(`{{${k}}}`, v),
+    (html, [k, v]) => html.replaceAll(`{{${k}}}`, escapeHtml(v)),
     tpl
   );
 }

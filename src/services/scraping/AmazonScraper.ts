@@ -46,12 +46,13 @@ export class AmazonScraper implements IScraper {
       return null;
     }
     try {
+      const locale = process.env.SCRAPER_LOCALE ?? "es-ES";
       const context = await browser.newContext({
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        locale: "es-ES",
+        locale,
         extraHTTPHeaders: {
-          "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+          "Accept-Language": `${locale},${locale.split("-")[0]};q=0.9,en;q=0.8`,
         },
       });
 

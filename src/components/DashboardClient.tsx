@@ -24,14 +24,21 @@ export function DashboardClient() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    void fetch("/api/settings")
+    const controller = new AbortController();
+    void fetch("/api/settings", { signal: controller.signal })
       .then((r) => r.json() as Promise<AppSettingsData>)
       .then((data) => {
         setCurrentSettings(data);
         const configured = isSettingsConfigured(data);
         setSettingsConfigured(configured);
         if (!configured) setShowSettings(true);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.error("[DashboardClient] Failed to load settings:", err);
+        }
       });
+    return () => controller.abort();
   }, []);
 
   function handleSettingsSaved(settings: AppSettingsData) {

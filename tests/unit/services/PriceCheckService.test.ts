@@ -48,7 +48,6 @@ function makeScrapeResult(
 
 function makeMocks() {
   const repo: jest.Mocked<IProductRepository> = {
-    findAllWithTargets: jest.fn(),
     updatePriceAndStock: jest.fn().mockResolvedValue(undefined),
     setNotified: jest.fn().mockResolvedValue(undefined),
     setStockNotified: jest.fn().mockResolvedValue(undefined),

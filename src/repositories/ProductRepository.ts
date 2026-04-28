@@ -16,10 +16,6 @@ export class ProductRepository implements IProductRepository {
     return db.product.findUnique({ where: { asin } });
   }
 
-  async findAllWithTargets(): Promise<Product[]> {
-    return db.product.findMany({ where: { targetPrice: { not: null } } });
-  }
-
   async create(data: {
     asin: string;
     title: string;
