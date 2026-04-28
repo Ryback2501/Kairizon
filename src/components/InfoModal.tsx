@@ -32,10 +32,12 @@ export function InfoModal({ onClose }: InfoModalProps) {
   const [status, setStatus] = useState<StatusResponse | null>(null);
 
   useEffect(() => {
-    void fetch("/api/status")
+    const controller = new AbortController();
+    void fetch("/api/status", { signal: controller.signal })
       .then((r) => r.json() as Promise<StatusResponse>)
       .then(setStatus)
       .catch(() => null);
+    return () => controller.abort();
   }, []);
 
   const cron = status?.cron;

@@ -18,6 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     await repo.setNotified(id, parsed.data.notified as boolean);
     const updated = await repo.findById(id);
+    if (!updated) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     return NextResponse.json(updated);
   } catch (err) {
     console.error(`[PATCH /api/products/${id}/notified] Failed:`, err);

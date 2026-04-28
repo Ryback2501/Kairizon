@@ -10,7 +10,7 @@ const config: Config = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   collectCoverageFrom: ["src/**/*.{ts,tsx}", "!src/**/*.d.ts"],
   testPathIgnorePatterns: ["/node_modules/", "/tests/e2e/"],
-  passWithNoTests: true,
+  passWithNoTests: false,
   transform: {
     "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.test.json" }],
   },

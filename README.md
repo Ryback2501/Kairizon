@@ -109,20 +109,50 @@ All settings — SMTP server, sender address, and credentials — are configured
 
 To send email alerts via Gmail, create a [Google App Password](https://support.google.com/accounts/answer/185833) (requires 2FA on the account) and use it as the SMTP password with port 587 or 465.
 
+### Data persistence
+
+All persistent data lives in the `data/` directory (or whichever host path you mount at `/app/data` in Docker):
+
+| File | Description |
+|------|-------------|
+| `kairizon.db` | SQLite database — all products and settings |
+| `email-price-alert.html` | Email template for price-drop alerts |
+| `email-stock-alert.html` | Email template for back-in-stock alerts |
+
+The two HTML template files are created automatically on first startup with a default layout. You can edit them freely — they are never overwritten by the app on subsequent restarts.
+
+#### Email template placeholders
+
+**`email-price-alert.html`**
+
+| Placeholder | Value |
+|-------------|-------|
+| `{{PRODUCT_TITLE}}` | Product name |
+| `{{PRODUCT_URL}}` | Amazon product URL |
+| `{{CURRENT_PRICE}}` | Current price at the time of the alert (e.g. `€29.99`) |
+| `{{TARGET_PRICE}}` | Your configured target price (e.g. `€35.00`) |
+| `{{PRODUCT_IMAGE}}` | Product image URL from Amazon (empty string if unavailable) |
+
+**`email-stock-alert.html`**
+
+| Placeholder | Value |
+|-------------|-------|
+| `{{PRODUCT_TITLE}}` | Product name |
+| `{{PRODUCT_URL}}` | Amazon product URL |
+| `{{PRODUCT_IMAGE}}` | Product image URL from Amazon (empty string if unavailable) |
+
 ## Self-hosting notes
 
 **Backups**
 
-All data lives in a single SQLite file. Back it up by copying the `*.db` file at `./data/` or the folder you defined in the Docker command.
+You can bak up your data by copying the files at the folder you defined in the Docker command with the `-v` property.
 
-**Updating**
+**Updating the Docker image**
 ```bash
 docker pull ryback2501/kairizon:latest
 docker stop kairizon && docker rm kairizon
 # re-run the docker run command above
 ```
-
-Your data is safe in `./data/` — it is not stored inside the container.
 
 ## Contributing
 
