@@ -70,7 +70,7 @@ jobs:
         run: node dist/server.js &
 
       - name: Wait for app to be ready
-        run: npx wait-on http://localhost:3000 --timeout 30000
+        run: timeout 30 sh -c 'until curl -sf http://localhost:3000 -o /dev/null; do sleep 1; done'
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
