@@ -22,6 +22,9 @@ app.prepare().then(async () => {
   const { runMigrations } = await import("./src/lib/migrate");
   await runMigrations();
 
+  const { ensureEmailTemplates } = await import("./src/lib/email-templates");
+  ensureEmailTemplates();
+
   const { validateStartup } = await import("./src/lib/startup");
   await validateStartup();
 

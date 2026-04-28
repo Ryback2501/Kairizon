@@ -58,7 +58,7 @@ export class PriceCheckService implements IPriceCheckService {
     // Back in stock — send stock alert, then continue to price check
     if (amazonInStock && !product.inStock && product.trackStock && !product.stockNotified) {
       try {
-        await this.notifier.sendStockAlert({ productTitle: product.title, productUrl: product.url });
+        await this.notifier.sendStockAlert({ productTitle: product.title, productUrl: product.url, productImage: product.image ?? undefined });
         await this.repo.setStockNotified(product.id, true, true);
       } catch (err) {
         console.error(`[PriceCheckService] Failed to send stock alert for product ${product.id}:`, err);
@@ -79,7 +79,7 @@ export class PriceCheckService implements IPriceCheckService {
     // Price alert — fires if any eligible selected seller has price ≤ target
     if (currentPrice !== null && product.targetPrice !== null && currentPrice <= product.targetPrice && !product.notified) {
       try {
-        await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice, targetPrice: product.targetPrice });
+        await this.notifier.sendPriceAlert({ productTitle: product.title, productUrl: product.url, currentPrice, targetPrice: product.targetPrice, productImage: product.image ?? undefined });
         await this.repo.setNotified(product.id, true);
       } catch (err) {
         console.error(`[PriceCheckService] Failed to send price alert for product ${product.id}:`, err);
