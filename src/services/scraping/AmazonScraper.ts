@@ -38,7 +38,7 @@ export class AmazonScraper implements IScraper {
       const executablePath = process.env.CHROMIUM_EXECUTABLE_PATH;
       browser = await chromium.launch({
         headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
         ...(executablePath ? { executablePath } : {}),
       });
     } catch (err) {
