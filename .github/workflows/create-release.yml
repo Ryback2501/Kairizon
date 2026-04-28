@@ -80,7 +80,6 @@ jobs:
         with:
           context: .
           push: true
-          build-args: PREBUILT=true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/kairizon:${{ github.ref_name }}
             ${{ secrets.DOCKERHUB_USERNAME }}/kairizon:latest
