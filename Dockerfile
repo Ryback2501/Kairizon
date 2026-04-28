@@ -30,7 +30,11 @@ RUN find /app/node_modules/@next -name "*.node" -delete \
     && find /app/node_modules/@prisma/client/runtime -name "*.map" -delete \
     && rm -rf /app/node_modules/.cache \
     && rm -rf /app/node_modules/@img \
-              /app/node_modules/sharp
+              /app/node_modules/sharp \
+    && rm -rf /app/node_modules/next/dist/compiled/next-devtools \
+              /app/node_modules/next/dist/compiled/react-dom-experimental \
+              /app/node_modules/next/dist/compiled/react-server-dom-webpack-experimental \
+              /app/node_modules/next/dist/compiled/react-server-dom-turbopack-experimental
 
 # Stage 3: Production runner
 FROM node:24-alpine AS runner
