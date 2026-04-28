@@ -6,18 +6,14 @@ COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps
 
 # Stage 2: Build
-# When PREBUILT=true (CI release), artifacts are already in the build context —
-# prisma generate still runs but npm run build is skipped.
-# When PREBUILT=false (default, local), the full build runs from source.
 FROM node:24-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-ARG PREBUILT=false
 RUN ./node_modules/.bin/prisma generate
-RUN if [ "$PREBUILT" != "true" ]; then npm run build; fi
+RUN npm run build
 RUN mkdir -p public
 
 # Stage 3: Production-only node_modules
