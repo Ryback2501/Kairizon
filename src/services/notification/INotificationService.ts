@@ -3,11 +3,13 @@ export interface PriceAlertParams {
   productUrl: string;
   currentPrice: number;
   targetPrice: number;
+  productImage?: string;
 }
 
 export interface StockAlertParams {
   productTitle: string;
   productUrl: string;
+  productImage?: string;
 }
 
 export interface INotificationService {

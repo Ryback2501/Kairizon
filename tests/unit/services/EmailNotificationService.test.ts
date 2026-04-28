@@ -7,6 +7,16 @@ jest.mock("@/lib/mailer", () => ({
   createTransporter: jest.fn(() => ({ sendMail: mockSendMail })),
 }));
 
+jest.mock("@/lib/email-templates", () => ({
+  PRICE_ALERT_TEMPLATE: "email-price-alert.html",
+  STOCK_ALERT_TEMPLATE: "email-stock-alert.html",
+  renderTemplate: jest.fn((_filename: string, vars: Record<string, string>) =>
+    Object.entries(vars)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(" ")
+  ),
+}));
+
 const CONFIGURED_SETTINGS: AppSettingsData = {
   smtpHost: "smtp.gmail.com",
   smtpPort: 587,

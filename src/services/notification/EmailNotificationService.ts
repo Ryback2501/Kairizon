@@ -1,4 +1,5 @@
 import { createTransporter } from "@/lib/mailer";
+import { renderTemplate, PRICE_ALERT_TEMPLATE, STOCK_ALERT_TEMPLATE } from "@/lib/email-templates";
 import { isSettingsConfigured } from "@/repositories/IAppSettingsRepository";
 import type { IAppSettingsRepository } from "@/repositories/IAppSettingsRepository";
 import type {
@@ -22,12 +23,13 @@ export class EmailNotificationService implements INotificationService {
         from: settings.smtpFrom,
         to: settings.smtpUser,
         subject: `Price drop: ${params.productTitle}`,
-        html: `
-          <p>Good news! The price for <strong>${params.productTitle}</strong> has dropped to
-          <strong>$${params.currentPrice.toFixed(2)}</strong> — at or below your target of
-          $${params.targetPrice.toFixed(2)}.</p>
-          <p><a href="${params.productUrl}">View on Amazon</a></p>
-        `,
+        html: renderTemplate(PRICE_ALERT_TEMPLATE, {
+          PRODUCT_TITLE: params.productTitle,
+          PRODUCT_URL: params.productUrl,
+          CURRENT_PRICE: `€${params.currentPrice.toFixed(2)}`,
+          TARGET_PRICE: `€${params.targetPrice.toFixed(2)}`,
+          PRODUCT_IMAGE: params.productImage ?? "",
+        }),
       });
     } catch (err) {
       console.error("[email] Failed to send price alert:", err);
@@ -47,10 +49,11 @@ export class EmailNotificationService implements INotificationService {
         from: settings.smtpFrom,
         to: settings.smtpUser,
         subject: `Back in stock: ${params.productTitle}`,
-        html: `
-          <p><strong>${params.productTitle}</strong> is back in stock!</p>
-          <p><a href="${params.productUrl}">View on Amazon</a></p>
-        `,
+        html: renderTemplate(STOCK_ALERT_TEMPLATE, {
+          PRODUCT_TITLE: params.productTitle,
+          PRODUCT_URL: params.productUrl,
+          PRODUCT_IMAGE: params.productImage ?? "",
+        }),
       });
     } catch (err) {
       console.error("[email] Failed to send stock alert:", err);
