@@ -17,11 +17,20 @@ const DEFAULT_PRICE_ALERT = `<!DOCTYPE html>
 </head>
 <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
   <h2>Price drop alert</h2>
-  <p>
-    <strong>{{PRODUCT_TITLE}}</strong> is now <strong>{{CURRENT_PRICE}}</strong>,
-    at or below your target of {{TARGET_PRICE}}.
-  </p>
-  <p><a href="{{PRODUCT_URL}}">View on Amazon</a></p>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="width: 130px; vertical-align: top; padding-right: 16px;">
+        <img src="{{PRODUCT_IMAGE}}" alt="{{PRODUCT_TITLE}}" style="width: 120px; border-radius: 4px; display: block;" />
+      </td>
+      <td style="vertical-align: top;">
+        <p style="margin: 0 0 8px;">
+          <strong>{{PRODUCT_TITLE}}</strong> is now <strong>{{CURRENT_PRICE}}</strong>,
+          at or below your target of {{TARGET_PRICE}}.
+        </p>
+        <p style="margin: 0;"><a href="{{PRODUCT_URL}}">View on Amazon</a></p>
+      </td>
+    </tr>
+  </table>
   <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
   <p style="font-size: 12px; color: #9ca3af;">Sent by Kairizon &mdash; your Amazon price tracker.</p>
 </body>
@@ -35,8 +44,17 @@ const DEFAULT_STOCK_ALERT = `<!DOCTYPE html>
 </head>
 <body style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1a1a1a;">
   <h2>Back in stock</h2>
-  <p><strong>{{PRODUCT_TITLE}}</strong> is back in stock on Amazon.</p>
-  <p><a href="{{PRODUCT_URL}}">View on Amazon</a></p>
+  <table style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td style="width: 130px; vertical-align: top; padding-right: 16px;">
+        <img src="{{PRODUCT_IMAGE}}" alt="{{PRODUCT_TITLE}}" style="width: 120px; border-radius: 4px; display: block;" />
+      </td>
+      <td style="vertical-align: top;">
+        <p style="margin: 0 0 8px;"><strong>{{PRODUCT_TITLE}}</strong> is back in stock on Amazon.</p>
+        <p style="margin: 0;"><a href="{{PRODUCT_URL}}">View on Amazon</a></p>
+      </td>
+    </tr>
+  </table>
   <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
   <p style="font-size: 12px; color: #9ca3af;">Sent by Kairizon &mdash; your Amazon price tracker.</p>
 </body>
