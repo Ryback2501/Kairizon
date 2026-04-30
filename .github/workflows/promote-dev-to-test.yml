@@ -67,7 +67,7 @@ jobs:
         run: npm run build
 
       - name: Start app server
-        run: node dist/server.js &
+        run: NODE_ENV=production node dist/server.js &
 
       - name: Wait for app to be ready
         run: timeout 30 sh -c 'until curl -sf http://localhost:3000/api/status -o /dev/null; do sleep 1; done'
