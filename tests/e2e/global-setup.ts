@@ -1,51 +1,45 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import Database from "better-sqlite3";
+import { resolve } from "path";
+import { randomUUID } from "crypto";
 
 const TEST_ASIN = "B00E2ETEST1";
 
-export default async function globalSetup() {
-  const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL ?? "" });
-  const prisma = new PrismaClient({ adapter });
+export default function globalSetup() {
+  const url = process.env.DATABASE_URL ?? "";
+  const filePath = url.startsWith("file:") ? url.slice(5) : url;
+  const db = new Database(resolve(filePath));
   try {
-    // Configure SMTP so the settings modal does not block the UI
-    await prisma.appSettings.upsert({
-      where: { id: "singleton" },
-      update: {
-        smtpHost: "smtp.e2e-test.com",
-        smtpPort: 587,
-        smtpUser: "e2e@test.com",
-        smtpPass: "e2e-pass",
-        smtpFrom: "E2E <e2e@test.com>",
-      },
-      create: {
-        id: "singleton",
-        smtpHost: "smtp.e2e-test.com",
-        smtpPort: 587,
-        smtpUser: "e2e@test.com",
-        smtpPass: "e2e-pass",
-        smtpFrom: "E2E <e2e@test.com>",
-      },
-    });
+    db.prepare(`
+      INSERT INTO "AppSettings" ("id","smtpHost","smtpPort","smtpUser","smtpPass","smtpFrom")
+      VALUES ('singleton','smtp.e2e-test.com',587,'e2e@test.com','e2e-pass','E2E <e2e@test.com>')
+      ON CONFLICT("id") DO UPDATE SET
+        "smtpHost" = excluded."smtpHost",
+        "smtpPort" = excluded."smtpPort",
+        "smtpUser" = excluded."smtpUser",
+        "smtpPass" = excluded."smtpPass",
+        "smtpFrom" = excluded."smtpFrom"
+    `).run();
 
-    // Seed a product for tests that need an existing card
-    await prisma.product.deleteMany({ where: { asin: TEST_ASIN } });
-    await prisma.product.create({
-      data: {
-        asin: TEST_ASIN,
-        title: "E2E Test Product",
-        image: null,
-        url: `https://www.amazon.com/dp/${TEST_ASIN}`,
-        currentPrice: 49.99,
-        inStock: true,
-        availableSellers: JSON.stringify([
-          { name: "Amazon", price: 49.99, shipping: 0, isSecondHand: false },
-          { name: "UsedSeller", price: 30.0, shipping: 0, isSecondHand: true },
-        ]),
-        excludedSellers: JSON.stringify([]),
-        includeSecondHand: true,
-      },
-    });
+    db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
+    db.prepare(`
+      INSERT INTO "Product" ("id","asin","title","image","url","currentPrice","inStock","availableSellers","excludedSellers","includeSecondHand")
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+    `).run(
+      randomUUID(),
+      TEST_ASIN,
+      "E2E Test Product",
+      null,
+      `https://www.amazon.com/dp/${TEST_ASIN}`,
+      49.99,
+      1,
+      JSON.stringify([
+        { name: "Amazon", price: 49.99, shipping: 0, isSecondHand: false },
+        { name: "UsedSeller", price: 30.0, shipping: 0, isSecondHand: true },
+      ]),
+      JSON.stringify([]),
+      1,
+    );
   } finally {
-    await prisma.$disconnect();
+    db.close();
   }
 }

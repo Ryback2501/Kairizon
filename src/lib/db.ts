@@ -1,19 +1,16 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import Database from "better-sqlite3";
+import { resolve } from "path";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const globalForDb = globalThis as unknown as { db: Database.Database };
 
-function createPrismaClient(): PrismaClient {
-  // DATABASE_URL may be absent at Next.js build time when route modules are
-  // evaluated statically. PrismaLibSql will surface a connection error on the
-  // first actual query in that case, which is the correct behaviour.
-  const url = process.env.DATABASE_URL ?? "";
-  const adapter = new PrismaLibSql({ url });
-  return new PrismaClient({
-    adapter,
-    log: process.env.NODE_ENV === "development" ? ["query", "error"] : ["error"],
-  });
+function parsePath(url: string): string {
+  const filePath = url.startsWith("file:") ? url.slice(5) : url;
+  return filePath === ":memory:" ? filePath : resolve(filePath);
 }
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+function createDb(): Database.Database {
+  return new Database(parsePath(process.env.DATABASE_URL ?? ":memory:"));
+}
+
+export const db = globalForDb.db ?? createDb();
+if (process.env.NODE_ENV !== "production") globalForDb.db = db;

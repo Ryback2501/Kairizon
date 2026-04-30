@@ -54,14 +54,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate Prisma client
-        run: npx prisma generate
-
       - name: Set DATABASE_URL
         run: echo "DATABASE_URL=file:./data/$DATABASE_FILE" >> $GITHUB_ENV
-
-      - name: Run database migrations
-        run: npx prisma db push --force-reset
 
       - name: Build
         run: npm run build

@@ -1,9 +1,8 @@
 import { db } from "@/lib/db";
 import api from "@/api/index";
 
-afterAll(async () => {
-  await db.appSettings.deleteMany({ where: { id: "singleton" } });
-  await db.$disconnect();
+afterAll(() => {
+  db.prepare(`DELETE FROM "AppSettings" WHERE "id" = 'singleton'`).run();
 });
 
 describe("GET /api/settings", () => {

@@ -7,6 +7,7 @@ const TEST_ASIN = "B00INTPID1";
 let productId: string;
 
 beforeAll(async () => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
   const product = await repo.create({
     asin: TEST_ASIN,
     title: "Products-ID Integration Test",
@@ -24,9 +25,8 @@ beforeAll(async () => {
   productId = product.id;
 });
 
-afterAll(async () => {
-  await db.product.deleteMany({ where: { asin: TEST_ASIN } });
-  await db.$disconnect();
+afterAll(() => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
 });
 
 function patch(path: string, body: unknown) {

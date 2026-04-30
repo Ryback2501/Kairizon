@@ -22,6 +22,7 @@ const repo = new ProductRepository();
 const TEST_ASIN = "B00INTTFN1";
 
 beforeAll(async () => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
   await repo.create({
     asin: TEST_ASIN,
     title: "Test Notifications Product",
@@ -32,9 +33,8 @@ beforeAll(async () => {
   });
 });
 
-afterAll(async () => {
-  await db.product.deleteMany({ where: { asin: TEST_ASIN } });
-  await db.$disconnect();
+afterAll(() => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
 });
 
 beforeEach(() => {

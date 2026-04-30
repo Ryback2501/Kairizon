@@ -13,9 +13,12 @@ const api = (require("@/api/index") as { default: import("hono").Hono }).default
 
 const TEST_ASIN = "B00INTAPI1";
 
-afterAll(async () => {
-  await db.product.deleteMany({ where: { asin: TEST_ASIN } });
-  await db.$disconnect();
+beforeAll(() => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
+});
+
+afterAll(() => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run(TEST_ASIN);
 });
 
 beforeEach(() => mockScrape.mockReset());
