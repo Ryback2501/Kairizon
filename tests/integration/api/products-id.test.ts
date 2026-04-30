@@ -1,13 +1,6 @@
-import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { ProductRepository } from "@/repositories/ProductRepository";
-
-import { DELETE } from "@/app/api/products/[id]/route";
-import { PATCH as patchTarget } from "@/app/api/products/[id]/target/route";
-import { PATCH as patchNotified } from "@/app/api/products/[id]/notified/route";
-import { PATCH as patchStockAlert } from "@/app/api/products/[id]/stock-alert/route";
-import { PATCH as patchSecondHand } from "@/app/api/products/[id]/second-hand/route";
-import { PATCH as patchExcludedSellers } from "@/app/api/products/[id]/excluded-sellers/route";
+import api from "@/api/index";
 
 const repo = new ProductRepository();
 const TEST_ASIN = "B00INTPID1";
@@ -36,8 +29,8 @@ afterAll(async () => {
   await db.$disconnect();
 });
 
-function makeReq(body: unknown): NextRequest {
-  return new NextRequest("http://localhost/api/products/test", {
+function patch(path: string, body: unknown) {
+  return api.request(path, {
     method: "PATCH",
     body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
@@ -48,9 +41,7 @@ function makeReq(body: unknown): NextRequest {
 
 describe("PATCH /api/products/[id]/target", () => {
   it("sets a valid target price and resets notified", async () => {
-    const res = await patchTarget(makeReq({ targetPrice: 40 }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/target`, { targetPrice: 40 });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.targetPrice).toBe(40);
@@ -58,25 +49,19 @@ describe("PATCH /api/products/[id]/target", () => {
   });
 
   it("clears the target price when null is sent", async () => {
-    const res = await patchTarget(makeReq({ targetPrice: null }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/target`, { targetPrice: null });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.targetPrice).toBeNull();
   });
 
   it("returns 400 for an invalid targetPrice", async () => {
-    const res = await patchTarget(makeReq({ targetPrice: "bad" }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/target`, { targetPrice: "bad" });
     expect(res.status).toBe(400);
   });
 
   it("returns 404 for an unknown product id", async () => {
-    const res = await patchTarget(makeReq({ targetPrice: 10 }), {
-      params: Promise.resolve({ id: "nonexistent-id" }),
-    });
+    const res = await patch("/products/nonexistent-id/target", { targetPrice: 10 });
     expect(res.status).toBe(404);
   });
 });
@@ -85,27 +70,21 @@ describe("PATCH /api/products/[id]/target", () => {
 
 describe("PATCH /api/products/[id]/notified", () => {
   it("sets notified to true", async () => {
-    const res = await patchNotified(makeReq({ notified: true }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/notified`, { notified: true });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.notified).toBe(true);
   });
 
   it("sets notified to false", async () => {
-    const res = await patchNotified(makeReq({ notified: false }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/notified`, { notified: false });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.notified).toBe(false);
   });
 
   it("returns 400 for non-boolean notified", async () => {
-    const res = await patchNotified(makeReq({ notified: "yes" }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/notified`, { notified: "yes" });
     expect(res.status).toBe(400);
   });
 });
@@ -114,34 +93,26 @@ describe("PATCH /api/products/[id]/notified", () => {
 
 describe("PATCH /api/products/[id]/stock-alert", () => {
   it("enables stock tracking", async () => {
-    const res = await patchStockAlert(makeReq({ trackStock: true }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/stock-alert`, { trackStock: true });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.trackStock).toBe(true);
   });
 
   it("disables stock tracking", async () => {
-    const res = await patchStockAlert(makeReq({ trackStock: false }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/stock-alert`, { trackStock: false });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.trackStock).toBe(false);
   });
 
   it("returns 400 for non-boolean trackStock", async () => {
-    const res = await patchStockAlert(makeReq({ trackStock: 1 }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/stock-alert`, { trackStock: 1 });
     expect(res.status).toBe(400);
   });
 
   it("returns 404 for an unknown product id", async () => {
-    const res = await patchStockAlert(makeReq({ trackStock: true }), {
-      params: Promise.resolve({ id: "nonexistent-id" }),
-    });
+    const res = await patch("/products/nonexistent-id/stock-alert", { trackStock: true });
     expect(res.status).toBe(404);
   });
 });
@@ -150,9 +121,7 @@ describe("PATCH /api/products/[id]/stock-alert", () => {
 
 describe("PATCH /api/products/[id]/second-hand", () => {
   it("disabling second-hand adds used sellers to excludedSellers", async () => {
-    const res = await patchSecondHand(makeReq({ includeSecondHand: false }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/second-hand`, { includeSecondHand: false });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.includeSecondHand).toBe(false);
@@ -161,9 +130,7 @@ describe("PATCH /api/products/[id]/second-hand", () => {
   });
 
   it("re-enabling second-hand removes used sellers from excludedSellers", async () => {
-    const res = await patchSecondHand(makeReq({ includeSecondHand: true }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/second-hand`, { includeSecondHand: true });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.includeSecondHand).toBe(true);
@@ -172,16 +139,12 @@ describe("PATCH /api/products/[id]/second-hand", () => {
   });
 
   it("returns 400 for non-boolean includeSecondHand", async () => {
-    const res = await patchSecondHand(makeReq({ includeSecondHand: "yes" }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/second-hand`, { includeSecondHand: "yes" });
     expect(res.status).toBe(400);
   });
 
   it("returns 404 for an unknown product id", async () => {
-    const res = await patchSecondHand(makeReq({ includeSecondHand: true }), {
-      params: Promise.resolve({ id: "nonexistent-id" }),
-    });
+    const res = await patch("/products/nonexistent-id/second-hand", { includeSecondHand: true });
     expect(res.status).toBe(404);
   });
 });
@@ -190,9 +153,7 @@ describe("PATCH /api/products/[id]/second-hand", () => {
 
 describe("PATCH /api/products/[id]/excluded-sellers", () => {
   it("updates excludedSellers and recalculates currentPrice", async () => {
-    const res = await patchExcludedSellers(makeReq({ excludedSellers: ["Amazon"] }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/excluded-sellers`, { excludedSellers: ["Amazon"] });
     expect(res.status).toBe(200);
     const body = await res.json();
     const excluded: string[] = JSON.parse(body.excludedSellers);
@@ -200,25 +161,19 @@ describe("PATCH /api/products/[id]/excluded-sellers", () => {
   });
 
   it("clears excludedSellers when an empty array is sent", async () => {
-    const res = await patchExcludedSellers(makeReq({ excludedSellers: [] }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/excluded-sellers`, { excludedSellers: [] });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(JSON.parse(body.excludedSellers)).toEqual([]);
   });
 
   it("returns 400 when excludedSellers is not a string array", async () => {
-    const res = await patchExcludedSellers(makeReq({ excludedSellers: [1, 2] }), {
-      params: Promise.resolve({ id: productId }),
-    });
+    const res = await patch(`/products/${productId}/excluded-sellers`, { excludedSellers: [1, 2] });
     expect(res.status).toBe(400);
   });
 
   it("returns 404 for an unknown product id", async () => {
-    const res = await patchExcludedSellers(makeReq({ excludedSellers: [] }), {
-      params: Promise.resolve({ id: "nonexistent-id" }),
-    });
+    const res = await patch("/products/nonexistent-id/excluded-sellers", { excludedSellers: [] });
     expect(res.status).toBe(404);
   });
 });
@@ -227,20 +182,13 @@ describe("PATCH /api/products/[id]/excluded-sellers", () => {
 
 describe("DELETE /api/products/[id]", () => {
   it("returns 404 for an unknown product id", async () => {
-    const req = new NextRequest("http://localhost/api/products/bad-id", {
-      method: "DELETE",
-    });
-    const res = await DELETE(req, { params: Promise.resolve({ id: "nonexistent-id" }) });
+    const res = await api.request("/products/nonexistent-id", { method: "DELETE" });
     expect(res.status).toBe(404);
   });
 
   it("deletes the product and returns 204", async () => {
-    const req = new NextRequest(`http://localhost/api/products/${productId}`, {
-      method: "DELETE",
-    });
-    const res = await DELETE(req, { params: Promise.resolve({ id: productId }) });
+    const res = await api.request(`/products/${productId}`, { method: "DELETE" });
     expect(res.status).toBe(204);
-
     const gone = await repo.findById(productId);
     expect(gone).toBeNull();
   });

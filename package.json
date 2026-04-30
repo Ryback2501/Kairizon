@@ -3,8 +3,10 @@
   "version": "0.3.0",
   "private": true,
   "scripts": {
-    "dev": "sh -c 'export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && npx prisma db push && ts-node -r tsconfig-paths/register --project tsconfig.server.json server.ts'",
-    "build": "next build && tsc --project tsconfig.server.json && tsc-alias --project tsconfig.server.json",
+    "dev:server": "sh -c 'export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && npx prisma db push && ts-node -r tsconfig-paths/register --project tsconfig.server.json server.ts'",
+    "dev:client": "vite",
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
+    "build": "vite build && tsc --project tsconfig.server.json && tsc-alias --project tsconfig.server.json",
     "start": "NODE_ENV=production sh -c 'export DATABASE_URL=file:./data/${DATABASE_FILE:-kairizon.db} && npx prisma db push && node dist/server.js'",
     "lint": "eslint .",
     "test": "jest",
@@ -14,10 +16,11 @@
     "test:all": "npm run test && npm run test:e2e"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.0",
     "@libsql/client": "^0.17.0",
     "@prisma/adapter-libsql": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "next": "^16.2.4",
+    "hono": "^4.12.15",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.5",
     "playwright-core": "^1.59.1",
@@ -25,25 +28,29 @@
     "react-dom": "^19.2.5"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.48.2",
-    "prisma": "^7.8.0",
-    "@tailwindcss/postcss": "^4.2.4",
+    "@tailwindcss/vite": "^4.2.4",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.6.0",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.4",
+    "globals": "^17.5.0",
     "jest": "^30.3.0",
     "jest-environment-node": "^30.3.0",
-    "postcss": "^8.5.10",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4.2.4",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.1",
+    "vite": "^8.0.10"
   }
 }

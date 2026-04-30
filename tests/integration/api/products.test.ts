@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 
 const mockScrape = jest.fn();
@@ -7,7 +6,10 @@ jest.mock("@/services/scraping/AmazonScraper", () => ({
   AmazonScraper: jest.fn().mockImplementation(() => ({ scrape: mockScrape })),
 }));
 
-import { GET, POST } from "@/app/api/products/route";
+// Must be required after jest.mock() so AmazonScraper is already mocked when the
+// module-level `new AmazonScraper()` in src/api/index.ts runs.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const api = (require("@/api/index") as { default: import("hono").Hono }).default;
 
 const TEST_ASIN = "B00INTAPI1";
 
@@ -20,7 +22,7 @@ beforeEach(() => mockScrape.mockReset());
 
 describe("GET /api/products", () => {
   it("returns 200 with a JSON array", async () => {
-    const res = await GET();
+    const res = await api.request("/products");
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body)).toBe(true);
@@ -28,13 +30,16 @@ describe("GET /api/products", () => {
 });
 
 describe("POST /api/products", () => {
-  it("returns 400 for an invalid Amazon URL", async () => {
-    const req = new NextRequest("http://localhost/api/products", {
+  function post(body: unknown) {
+    return api.request("/products", {
       method: "POST",
-      body: JSON.stringify({ url: "https://google.com/dp/B000" }),
+      body: JSON.stringify(body),
       headers: { "Content-Type": "application/json" },
     });
-    const res = await POST(req);
+  }
+
+  it("returns 400 for an invalid Amazon URL", async () => {
+    const res = await post({ url: "https://google.com/dp/B000" });
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.error).toMatch(/invalid/i);
@@ -42,12 +47,7 @@ describe("POST /api/products", () => {
 
   it("returns 422 when the scraper returns null", async () => {
     mockScrape.mockResolvedValue(null);
-    const req = new NextRequest("http://localhost/api/products", {
-      method: "POST",
-      body: JSON.stringify({ url: `https://www.amazon.com/dp/${TEST_ASIN}` }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const res = await POST(req);
+    const res = await post({ url: `https://www.amazon.com/dp/${TEST_ASIN}` });
     expect(res.status).toBe(422);
   });
 
@@ -58,13 +58,7 @@ describe("POST /api/products", () => {
       image: null,
       sellers: [{ name: "Amazon", price: 30, shipping: 0, isSecondHand: false }],
     });
-
-    const req = new NextRequest("http://localhost/api/products", {
-      method: "POST",
-      body: JSON.stringify({ url: `https://www.amazon.com/dp/${TEST_ASIN}` }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const res = await POST(req);
+    const res = await post({ url: `https://www.amazon.com/dp/${TEST_ASIN}` });
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.asin).toBe(TEST_ASIN);
@@ -73,12 +67,7 @@ describe("POST /api/products", () => {
   });
 
   it("returns 409 when the product is already tracked", async () => {
-    const req = new NextRequest("http://localhost/api/products", {
-      method: "POST",
-      body: JSON.stringify({ url: `https://www.amazon.com/dp/${TEST_ASIN}` }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const res = await POST(req);
+    const res = await post({ url: `https://www.amazon.com/dp/${TEST_ASIN}` });
     expect(res.status).toBe(409);
     const body = await res.json();
     expect(body.error).toMatch(/already tracked/i);

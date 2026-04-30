@@ -8,8 +8,6 @@ RUN npm ci --legacy-peer-deps
 COPY . .
 RUN ./node_modules/.bin/prisma generate
 RUN npm run build
-RUN mkdir -p public
-RUN rm -rf /app/.next/dev /app/.next/cache /app/.next/trace /app/.next/trace-build /app/.next/types
 
 # Stage 2: Production node_modules
 # Uses --omit=dev so devDeps are never downloaded; copies the Prisma query engine
@@ -22,19 +20,12 @@ RUN npm ci --omit=dev --legacy-peer-deps
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-RUN find /app/node_modules/@next -name "*.node" -delete \
-    && find /app/node_modules -name "libquery_engine-debian*" -delete \
+RUN find /app/node_modules -name "libquery_engine-debian*" -delete \
     && find /app/node_modules/@prisma/client/runtime -name "query_compiler*" ! -name "*sqlite*" -delete \
     && rm -rf /app/node_modules/@prisma/client/generator-build \
               /app/node_modules/@prisma/client/scripts \
     && find /app/node_modules/@prisma/client/runtime -name "*.map" -delete \
-    && rm -rf /app/node_modules/.cache \
-    && rm -rf /app/node_modules/@img \
-              /app/node_modules/sharp \
-    && rm -rf /app/node_modules/next/dist/compiled/next-devtools \
-              /app/node_modules/next/dist/compiled/react-dom-experimental \
-              /app/node_modules/next/dist/compiled/react-server-dom-webpack-experimental \
-              /app/node_modules/next/dist/compiled/react-server-dom-turbopack-experimental
+    && rm -rf /app/node_modules/.cache
 
 # Stage 3: Production runner
 FROM node:24-alpine AS runner
@@ -52,12 +43,9 @@ RUN apk add --no-cache chromium \
     && rm -f /usr/lib/libpython3*.so*
 
 COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
-COPY --from=builder /app/dist ./dist
 
 RUN mkdir -p /app/data
 

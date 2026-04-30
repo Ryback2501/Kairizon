@@ -1,4 +1,5 @@
-import nextConfig from "eslint-config-next/core-web-vitals";
+import tseslint from "typescript-eslint";
+import globals from "globals";
 
 const jestGlobals = {
   describe: "readonly",
@@ -12,13 +13,22 @@ const jestGlobals = {
   jest: "readonly",
 };
 
-const eslintConfig = [
-  { ignores: [".next/**", "dist/**", "node_modules/**"] },
-  ...nextConfig,
+export default tseslint.config(
+  { ignores: ["dist/**", "node_modules/**", ".next/**"] },
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    extends: tseslint.configs.recommended,
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
   {
     files: ["tests/**/*.ts"],
-    languageOptions: { globals: jestGlobals },
-  },
-];
-
-export default eslintConfig;
+    languageOptions: {
+      globals: { ...globals.node, ...jestGlobals },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  }
+);
