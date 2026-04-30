@@ -1,5 +1,3 @@
-process.env.DATABASE_URL = process.env.DATABASE_URL ?? "file::memory:";
-
 // Apply schema to the exact db instance used by repositories (works for both
 // file and in-memory databases — avoids the separate-connection problem with :memory:).
 import { db } from "./src/lib/db";
