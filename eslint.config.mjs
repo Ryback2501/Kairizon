@@ -1,4 +1,4 @@
-import nextConfig from "eslint-config-next/core-web-vitals";
+import js from "@eslint/js";
 
 const jestGlobals = {
   describe: "readonly",
@@ -13,8 +13,8 @@ const jestGlobals = {
 };
 
 const eslintConfig = [
-  { ignores: [".next/**", "dist/**", "node_modules/**"] },
-  ...nextConfig,
+  { ignores: ["dist/**", "node_modules/**"] },
+  js.configs.recommended,
   {
     files: ["tests/**/*.ts"],
     languageOptions: { globals: jestGlobals },

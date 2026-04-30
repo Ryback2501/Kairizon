@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import type { Product } from "@prisma/client";
 import { Card } from "./ui/Card";
 import { Input } from "./ui/Input";
@@ -230,7 +229,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     <Card className="flex gap-4">
       {product.image && (
         <div className="shrink-0">
-          <Image
+          <img
             src={product.image}
             alt={product.title}
             width={72}
