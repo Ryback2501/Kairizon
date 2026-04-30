@@ -60,6 +60,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Create data directory
+        run: mkdir -p data
+
       - name: Start app server
         run: NODE_ENV=production node dist/server.js &
 

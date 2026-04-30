@@ -58,7 +58,6 @@ jobs:
         run: |
           zip -r kairizon-${{ github.ref_name }}.zip \
             dist/ \
-            prisma/schema.prisma \
             package.json \
             package-lock.json \
             .playwright-browsers/ \
