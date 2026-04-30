@@ -1,9 +1,12 @@
 import { db } from "@/lib/db";
 import { ProductRepository } from "@/repositories/ProductRepository";
 
-afterAll(async () => {
-  await db.product.deleteMany({ where: { asin: "B00TESTINT1" } });
-  await db.$disconnect();
+beforeAll(() => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run("B00TESTINT1");
+});
+
+afterAll(() => {
+  db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run("B00TESTINT1");
 });
 
 describe("ProductRepository", () => {
@@ -102,16 +105,20 @@ describe("ProductRepository", () => {
   });
 
   it("rejects duplicate ASIN", async () => {
-    await expect(
-      repo.create({
+    let threw = false;
+    try {
+      await repo.create({
         asin: "B00TESTINT1",
         title: "Duplicate",
         image: null,
         url: "https://www.amazon.com/dp/B00TESTINT1",
         currentPrice: 9.99,
         inStock: true,
-      })
-    ).rejects.toThrow();
+      });
+    } catch {
+      threw = true;
+    }
+    expect(threw).toBe(true);
   });
 
   it("deletes a product", async () => {

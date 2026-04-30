@@ -1,16 +1,15 @@
 import { db } from "@/lib/db";
 import { AppSettingsRepository } from "@/repositories/AppSettingsRepository";
 
-afterAll(async () => {
-  await db.appSettings.deleteMany({ where: { id: "singleton" } });
-  await db.$disconnect();
+afterAll(() => {
+  db.prepare(`DELETE FROM "AppSettings" WHERE "id" = 'singleton'`).run();
 });
 
 describe("AppSettingsRepository", () => {
   const repo = new AppSettingsRepository();
 
   it("get() creates the singleton row with empty defaults on first call", async () => {
-    await db.appSettings.deleteMany({ where: { id: "singleton" } });
+    db.prepare(`DELETE FROM "AppSettings" WHERE "id" = 'singleton'`).run();
     const settings = await repo.get();
     expect(settings.smtpHost).toBe("");
     expect(settings.smtpPort).toBe(587);

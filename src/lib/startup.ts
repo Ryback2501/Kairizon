@@ -9,7 +9,7 @@ export async function validateStartup(): Promise<void> {
   }
 
   try {
-    await db.$connect();
+    db.prepare("SELECT 1").get();
     console.log("[startup] Database connection OK");
   } catch (err) {
     throw new Error(

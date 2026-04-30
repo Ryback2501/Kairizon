@@ -1,4 +1,4 @@
-import type { Product } from "@prisma/client";
+import type { Product } from "@/types";
 import type { Seller } from "@/types";
 
 export interface IProductRepository {

@@ -3,28 +3,19 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN apk add --no-cache python3 make g++ \
+    && npm ci --legacy-peer-deps
 
 COPY . .
-RUN ./node_modules/.bin/prisma generate
 RUN npm run build
 
 # Stage 2: Production node_modules
-# Uses --omit=dev so devDeps are never downloaded; copies the Prisma query engine
-# (musl/Alpine binary) from builder instead of re-running prisma generate.
 FROM node:24-alpine AS prod-deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --legacy-peer-deps
-
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-
-RUN find /app/node_modules -name "libquery_engine-debian*" -delete \
-    && find /app/node_modules/@prisma/client/runtime -name "query_compiler*" ! -name "*sqlite*" -delete \
-    && rm -rf /app/node_modules/@prisma/client/generator-build \
-              /app/node_modules/@prisma/client/scripts \
-    && find /app/node_modules/@prisma/client/runtime -name "*.map" -delete \
+RUN apk add --no-cache python3 make g++ \
+    && npm ci --omit=dev --legacy-peer-deps \
     && rm -rf /app/node_modules/.cache
 
 # Stage 3: Production runner
@@ -44,7 +35,6 @@ RUN apk add --no-cache chromium \
 
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 
 RUN mkdir -p /app/data

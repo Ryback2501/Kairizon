@@ -21,7 +21,7 @@ process.on("unhandledRejection", (reason) => {
 
 async function main() {
   const { runMigrations } = await import("./src/lib/migrate");
-  await runMigrations();
+  runMigrations();
 
   const { ensureEmailTemplates } = await import("./src/lib/email-templates");
   ensureEmailTemplates();
@@ -67,7 +67,7 @@ async function main() {
     console.log(`> ${signal} received — shutting down gracefully`);
     server.close(async () => {
       const { db } = await import("./src/lib/db");
-      await db.$disconnect().catch(() => null);
+      try { db.close(); } catch { /* already closed */ }
       console.log("> Shutdown complete");
       process.exit(0);
     });
