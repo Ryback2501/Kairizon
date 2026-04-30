@@ -5,7 +5,6 @@ import { AmazonScraper } from "@/services/scraping/AmazonScraper";
 import { EmailNotificationService } from "@/services/notification/EmailNotificationService";
 import { isValidAmazonUrl, extractAsin, isAmazonSeller } from "@/lib/amazon";
 import { computePrice } from "@/lib/pricing";
-import { deduplicateSellers } from "@/lib/pricing";
 import { runUpdate } from "@/lib/price-check-runner";
 import { isRateLimited, allow } from "@/lib/rate-limit";
 import { cronStatus } from "@/lib/cron-status";

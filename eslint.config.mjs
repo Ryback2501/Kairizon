@@ -1,4 +1,5 @@
-import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import globals from "globals";
 
 const jestGlobals = {
   describe: "readonly",
@@ -12,13 +13,22 @@ const jestGlobals = {
   jest: "readonly",
 };
 
-const eslintConfig = [
-  { ignores: ["dist/**", "node_modules/**"] },
-  js.configs.recommended,
+export default tseslint.config(
+  { ignores: ["dist/**", "node_modules/**", ".next/**"] },
+  {
+    files: ["**/*.ts", "**/*.tsx"],
+    extends: tseslint.configs.recommended,
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node },
+    },
+  },
   {
     files: ["tests/**/*.ts"],
-    languageOptions: { globals: jestGlobals },
-  },
-];
-
-export default eslintConfig;
+    languageOptions: {
+      globals: { ...globals.node, ...jestGlobals },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  }
+);
