@@ -16,7 +16,7 @@ jest.mock("@/lib/rate-limit", () => ({
   allow: jest.fn(),
 }));
 
-import { POST } from "@/app/api/test-notifications/route";
+import api from "@/api/index";
 
 const repo = new ProductRepository();
 const TEST_ASIN = "B00INTTFN1";
@@ -44,7 +44,7 @@ beforeEach(() => {
 
 describe("POST /api/test-notifications", () => {
   it("returns 200 with a product title in the response", async () => {
-    const res = await POST();
+    const res = await api.request("/test-notifications", { method: "POST" });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(typeof body.product).toBe("string");
@@ -52,17 +52,17 @@ describe("POST /api/test-notifications", () => {
   });
 
   it("calls sendPriceAlert exactly once", async () => {
-    await POST();
+    await api.request("/test-notifications", { method: "POST" });
     expect(mockSendPriceAlert).toHaveBeenCalledTimes(1);
   });
 
   it("calls sendStockAlert exactly once", async () => {
-    await POST();
+    await api.request("/test-notifications", { method: "POST" });
     expect(mockSendStockAlert).toHaveBeenCalledTimes(1);
   });
 
   it("sendPriceAlert receives a positive currentPrice and targetPrice", async () => {
-    await POST();
+    await api.request("/test-notifications", { method: "POST" });
     const args = mockSendPriceAlert.mock.calls[0][0];
     expect(args.currentPrice).toBeGreaterThan(0);
     expect(args.targetPrice).toBeGreaterThan(0);
@@ -71,7 +71,7 @@ describe("POST /api/test-notifications", () => {
   });
 
   it("sendStockAlert receives a non-empty productTitle and productUrl", async () => {
-    await POST();
+    await api.request("/test-notifications", { method: "POST" });
     const args = mockSendStockAlert.mock.calls[0][0];
     expect(typeof args.productTitle).toBe("string");
     expect(args.productTitle.length).toBeGreaterThan(0);
