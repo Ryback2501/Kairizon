@@ -444,21 +444,6 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                   </svg>
                 )}
               </button>
-              {/* Cancel */}
-              <button
-                onClick={() => {
-                  setEditingTarget(false);
-                  setTargetInput(product.targetPrice?.toString() ?? "");
-                }}
-                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
-                aria-label="Cancel editing"
-                title="Cancel"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
             </>
           ) : (
             <>
