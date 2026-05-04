@@ -5,16 +5,16 @@ import { Input } from "./ui/Input";
 
 interface AddProductFormProps {
   onAdded: () => void;
+  onError: (message: string | null) => void;
 }
 
-export function AddProductForm({ onAdded }: AddProductFormProps) {
+export function AddProductForm({ onAdded, onError }: AddProductFormProps) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    onError(null);
     setLoading(true);
 
     try {
@@ -26,12 +26,14 @@ export function AddProductForm({ onAdded }: AddProductFormProps) {
       const data = await res.json() as { error?: string };
 
       if (!res.ok) {
-        setError(data.error ?? "Something went wrong");
+        onError(data.error || "Something went wrong");
         return;
       }
 
       setUrl("");
       onAdded();
+    } catch {
+      onError("Network error — please try again");
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,6 @@ export function AddProductForm({ onAdded }: AddProductFormProps) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste an Amazon product URL…"
-          error={error ?? undefined}
           disabled={loading}
           required
         />

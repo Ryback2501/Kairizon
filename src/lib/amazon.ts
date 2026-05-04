@@ -35,7 +35,7 @@ export function buildScrapeUrl(url: string): string {
   if (!asin) return url;
   try {
     const origin = new URL(url).origin;
-    return `${origin}/dp/${asin}?aod=1&th=1`;
+    return `${origin}/dp/${asin}?aod=1&th=1&language=en_US`;
   } catch {
     return url;
   }
@@ -62,8 +62,6 @@ const DOMAIN_INFO: Record<string, { currency: string; locale: string }> = {
   "amazon.ae":     { currency: "AED", locale: "ar-AE" },
   "amazon.sa":     { currency: "SAR", locale: "ar-SA" },
   "amazon.com.be": { currency: "EUR", locale: "nl-BE" },
-  "amazon.eg":     { currency: "EGP", locale: "ar-EG" },
-  "amazon.cn":     { currency: "CNY", locale: "zh-CN" },
 };
 
 export function getAmazonDomainInfo(url: string): { currency: string; locale: string } {

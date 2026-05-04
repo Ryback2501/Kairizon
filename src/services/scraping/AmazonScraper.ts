@@ -56,16 +56,33 @@ export class AmazonScraper implements IScraper {
       const page = await context.newPage();
 
       try {
-        // networkidle waits for JavaScript to render the AOD panel and price widgets
-        await page.goto(scrapeUrl, { waitUntil: "networkidle", timeout: 45_000 });
+        // "load" fires once the page is parsed and initial scripts run.
+        // We then wait for product content elements explicitly — more reliable than
+        // "networkidle" which can time out on amazon.com due to ongoing background requests.
+        await page.goto(scrapeUrl, { waitUntil: "load", timeout: 30_000 });
+        await page
+          .waitForSelector("#aod-offer-list, #aod-pinned-offer, #productTitle, #captchacharacters", {
+            timeout: 20_000,
+          })
+          .catch(() => {});
       } catch (err) {
         console.warn("[AmazonScraper] Navigation failed:", (err as Error).message);
         return null;
       }
 
-      // Detect CAPTCHA
-      const bodyText = await page.locator("body").textContent({ timeout: 5_000 }).catch(() => "");
-      if (bodyText?.includes("captchacharacters") || bodyText?.includes("Type the characters")) {
+      // Detect CAPTCHA — covers input field IDs, instruction text, page title, and redirect URL
+      const [bodyText, pageTitle, pageUrl] = await Promise.all([
+        page.locator("body").textContent({ timeout: 5_000 }).catch(() => ""),
+        page.title().catch(() => ""),
+        Promise.resolve(page.url()),
+      ]);
+      if (
+        bodyText?.includes("captchacharacters") ||
+        bodyText?.includes("Type the characters") ||
+        bodyText?.includes("Enter the characters you see below") ||
+        pageTitle.includes("Robot Check") ||
+        pageUrl.includes("validateCaptcha")
+      ) {
         console.warn("[AmazonScraper] CAPTCHA detected for:", scrapeUrl);
         return null;
       }

@@ -53,19 +53,19 @@ describe("isValidAmazonUrl", () => {
 describe("buildScrapeUrl", () => {
   it("builds an AOD URL with aod and th query params", () => {
     expect(buildScrapeUrl("https://www.amazon.com/dp/B08N5WRWNW")).toBe(
-      "https://www.amazon.com/dp/B08N5WRWNW?aod=1&th=1"
+      "https://www.amazon.com/dp/B08N5WRWNW?aod=1&th=1&language=en_US"
     );
   });
 
   it("strips existing query params and replaces with aod params", () => {
     expect(
       buildScrapeUrl("https://www.amazon.com/Some-Title/dp/B08N5WRWNW?ref=sr_1_1&psc=1")
-    ).toBe("https://www.amazon.com/dp/B08N5WRWNW?aod=1&th=1");
+    ).toBe("https://www.amazon.com/dp/B08N5WRWNW?aod=1&th=1&language=en_US");
   });
 
   it("preserves the original domain (e.g. amazon.co.uk)", () => {
     expect(buildScrapeUrl("https://www.amazon.co.uk/dp/B08N5WRWNW")).toBe(
-      "https://www.amazon.co.uk/dp/B08N5WRWNW?aod=1&th=1"
+      "https://www.amazon.co.uk/dp/B08N5WRWNW?aod=1&th=1&language=en_US"
     );
   });
 
@@ -98,14 +98,6 @@ describe("getAmazonDomainInfo", () => {
 
   it("returns EUR/nl-BE for amazon.com.be", () => {
     expect(getAmazonDomainInfo("https://www.amazon.com.be/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "nl-BE" });
-  });
-
-  it("returns EGP/ar-EG for amazon.eg", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.eg/dp/B000AAAAAA")).toEqual({ currency: "EGP", locale: "ar-EG" });
-  });
-
-  it("returns CNY/zh-CN for amazon.cn", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.cn/dp/B000AAAAAA")).toEqual({ currency: "CNY", locale: "zh-CN" });
   });
 
   it("returns USD/en-US fallback for unknown domain", () => {
