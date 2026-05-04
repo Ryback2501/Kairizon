@@ -1,4 +1,4 @@
-import { extractAsin, isValidAmazonUrl, buildScrapeUrl } from "@/lib/amazon";
+import { extractAsin, isValidAmazonUrl, buildScrapeUrl, getAmazonDomainInfo } from "@/lib/amazon";
 
 describe("extractAsin", () => {
   it("extracts ASIN from /dp/ URL", () => {
@@ -76,5 +76,31 @@ describe("buildScrapeUrl", () => {
 
   it("returns the original input when URL is invalid", () => {
     expect(buildScrapeUrl("not-a-url")).toBe("not-a-url");
+  });
+});
+
+describe("getAmazonDomainInfo", () => {
+  it("returns JPY/ja-JP for amazon.co.jp", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.co.jp/dp/B000AAAAAA")).toEqual({ currency: "JPY", locale: "ja-JP" });
+  });
+
+  it("returns USD/en-US for amazon.com", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.com/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US" });
+  });
+
+  it("returns EUR/es-ES for amazon.es", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.es/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "es-ES" });
+  });
+
+  it("returns GBP/en-GB for amazon.co.uk", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.co.uk/dp/B000AAAAAA")).toEqual({ currency: "GBP", locale: "en-GB" });
+  });
+
+  it("returns USD/en-US fallback for unknown domain", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.xyz/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US" });
+  });
+
+  it("returns USD/en-US fallback for invalid URL", () => {
+    expect(getAmazonDomainInfo("not-a-url")).toEqual({ currency: "USD", locale: "en-US" });
   });
 });

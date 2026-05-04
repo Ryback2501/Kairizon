@@ -13,15 +13,13 @@ export function randomDelay(): Promise<void> {
 }
 
 const SECOND_HAND_PATTERNS =
-  /used|refurbished|collectible|renewed|like new|very good|good|acceptable|usado|reacondicionado|como nuevo|muy bueno|bueno|aceptable/i;
+  /used|refurbished|collectible|renewed|like new|very good|good|acceptable/i;
 
 const OUT_OF_STOCK_PATTERNS = [
   /currently unavailable/i,
   /out of stock/i,
   /unavailable/i,
   /this item cannot be shipped/i,
-  /no disponible/i,
-  /agotado/i,
 ];
 
 export class AmazonScraper implements IScraper {
@@ -46,13 +44,12 @@ export class AmazonScraper implements IScraper {
       return null;
     }
     try {
-      const locale = process.env.SCRAPER_LOCALE ?? "es-ES";
       const context = await browser.newContext({
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        locale,
+        locale: "en-US",
         extraHTTPHeaders: {
-          "Accept-Language": `${locale},${locale.split("-")[0]};q=0.9,en;q=0.8`,
+          "Accept-Language": "en-US,en;q=0.9",
         },
       });
 
@@ -176,8 +173,6 @@ async function extractSellers(page: PlaywrightPage): Promise<Seller[]> {
       const shipping =
         !shippingSection ||
         shippingRaw.includes("free") ||
-        shippingRaw.includes("gratis") ||
-        shippingRaw.includes("envío gratis") ||
         shippingRaw.trim() === ""
           ? 0
           : (parsePrice(shippingRaw) ?? 0);
