@@ -46,11 +46,20 @@ export class AmazonScraper implements IScraper {
     try {
       const context = await browser.newContext({
         userAgent:
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
         locale: "en-US",
         extraHTTPHeaders: {
           "Accept-Language": "en-US,en;q=0.9",
         },
+      });
+
+      // Patch the most common headless-browser detection vectors before any
+      // page script runs. navigator.webdriver is the primary Amazon check.
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+        (window as Record<string, unknown>)["chrome"] = { runtime: {} };
+        Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
+        Object.defineProperty(navigator, "languages", { get: () => ["en-US", "en"] });
       });
 
       const page = await context.newPage();
