@@ -1,4 +1,5 @@
 import { createTransporter } from "@/lib/mailer";
+import { getAmazonDomainInfo } from "@/lib/amazon";
 import { renderTemplate, PRICE_ALERT_TEMPLATE, STOCK_ALERT_TEMPLATE } from "@/lib/email-templates";
 import { isSettingsConfigured } from "@/repositories/IAppSettingsRepository";
 import type { IAppSettingsRepository } from "@/repositories/IAppSettingsRepository";
@@ -19,6 +20,8 @@ export class EmailNotificationService implements INotificationService {
     }
     const transporter = createTransporter(settings);
     try {
+      const { currency, locale } = getAmazonDomainInfo(params.productUrl);
+      const fmt = (n: number) => n.toLocaleString(locale, { style: "currency", currency });
       await transporter.sendMail({
         from: settings.smtpFrom,
         to: settings.smtpUser,
@@ -26,8 +29,8 @@ export class EmailNotificationService implements INotificationService {
         html: renderTemplate(PRICE_ALERT_TEMPLATE, {
           PRODUCT_TITLE: params.productTitle,
           PRODUCT_URL: params.productUrl,
-          CURRENT_PRICE: `€${params.currentPrice.toFixed(2)}`,
-          TARGET_PRICE: `€${params.targetPrice.toFixed(2)}`,
+          CURRENT_PRICE: fmt(params.currentPrice),
+          TARGET_PRICE: fmt(params.targetPrice),
           PRODUCT_IMAGE: params.productImage ?? "",
         }),
       });

@@ -35,8 +35,40 @@ export function buildScrapeUrl(url: string): string {
   if (!asin) return url;
   try {
     const origin = new URL(url).origin;
-    return `${origin}/dp/${asin}?aod=1&th=1`;
+    return `${origin}/dp/${asin}?aod=1&th=1&language=en_US`;
   } catch {
     return url;
+  }
+}
+
+const DOMAIN_INFO: Record<string, { currency: string; locale: string }> = {
+  "amazon.com":    { currency: "USD", locale: "en-US" },
+  "amazon.co.uk":  { currency: "GBP", locale: "en-GB" },
+  "amazon.de":     { currency: "EUR", locale: "de-DE" },
+  "amazon.fr":     { currency: "EUR", locale: "fr-FR" },
+  "amazon.es":     { currency: "EUR", locale: "es-ES" },
+  "amazon.it":     { currency: "EUR", locale: "it-IT" },
+  "amazon.co.jp":  { currency: "JPY", locale: "ja-JP" },
+  "amazon.ca":     { currency: "CAD", locale: "en-CA" },
+  "amazon.com.au": { currency: "AUD", locale: "en-AU" },
+  "amazon.com.br": { currency: "BRL", locale: "pt-BR" },
+  "amazon.com.mx": { currency: "MXN", locale: "es-MX" },
+  "amazon.nl":     { currency: "EUR", locale: "nl-NL" },
+  "amazon.pl":     { currency: "PLN", locale: "pl-PL" },
+  "amazon.se":     { currency: "SEK", locale: "sv-SE" },
+  "amazon.com.tr": { currency: "TRY", locale: "tr-TR" },
+  "amazon.in":     { currency: "INR", locale: "en-IN" },
+  "amazon.sg":     { currency: "SGD", locale: "en-SG" },
+  "amazon.ae":     { currency: "AED", locale: "ar-AE" },
+  "amazon.sa":     { currency: "SAR", locale: "ar-SA" },
+  "amazon.com.be": { currency: "EUR", locale: "nl-BE" },
+};
+
+export function getAmazonDomainInfo(url: string): { currency: string; locale: string } {
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    return DOMAIN_INFO[hostname] ?? { currency: "USD", locale: "en-US" };
+  } catch {
+    return { currency: "USD", locale: "en-US" };
   }
 }

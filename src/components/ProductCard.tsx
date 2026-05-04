@@ -6,7 +6,7 @@ import { Card } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Toggle } from "./ui/Toggle";
 import type { Seller } from "@/types";
-import { isAmazonSeller } from "@/lib/amazon";
+import { isAmazonSeller, getAmazonDomainInfo } from "@/lib/amazon";
 import { deduplicateSellers } from "@/lib/pricing";
 
 interface ProductCardProps {
@@ -210,6 +210,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     ? mainPriceSeller.price + mainPriceSeller.shipping
     : null;
   const isUsed = mainPriceSeller?.isSecondHand ?? false;
+  const { currency, locale } = getAmazonDomainInfo(product.url);
   // Stock alert toggle enabled only when Amazon is selected and has no stock
   const stockAlertEnabled = isAmazonSelected && !amazonSeller;
 
@@ -279,7 +280,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               </span>
             ) : mainPrice !== null ? (
               <span className="font-semibold text-brand-charcoal text-sm flex items-baseline gap-1">
-                {mainPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                {mainPrice.toLocaleString(locale, { style: "currency", currency })}
                 {isUsed && <span className="text-amber-600 font-medium text-xs">(used)</span>}
               </span>
             ) : (
@@ -314,7 +315,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <>
                 <li className="text-xs text-brand-gray">
                   {product.targetPrice !== null
-                    ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`
+                    ? `Alert below ${product.targetPrice.toLocaleString(locale, { style: "currency", currency })}`
                     : "No price alert"}
                 </li>
                 {stockAlertEnabled && product.trackStock && (
@@ -322,7 +323,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 )}
                 {otherOptionPrice !== null && (
                   <li className="text-xs text-brand-gray">
-                    {`Other options from ${otherOptionPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`}
+                    {`Other options from ${otherOptionPrice.toLocaleString(locale, { style: "currency", currency })}`}
                   </li>
                 )}
               </>
@@ -396,15 +397,15 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                       ) : (
                         <>
                           <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
-                            {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                            {seller.price.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                           <td className="py-0.5 pl-3 text-right text-brand-gray">
                             {seller.shipping === 0
                               ? "Free"
-                              : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                              : seller.shipping.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                           <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
-                            {total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                            {total.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                         </>
                       )}

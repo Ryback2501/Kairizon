@@ -13,15 +13,13 @@ export function randomDelay(): Promise<void> {
 }
 
 const SECOND_HAND_PATTERNS =
-  /used|refurbished|collectible|renewed|like new|very good|good|acceptable|usado|reacondicionado|como nuevo|muy bueno|bueno|aceptable/i;
+  /used|refurbished|collectible|renewed|like new|very good|good|acceptable/i;
 
 const OUT_OF_STOCK_PATTERNS = [
   /currently unavailable/i,
   /out of stock/i,
   /unavailable/i,
   /this item cannot be shipped/i,
-  /no disponible/i,
-  /agotado/i,
 ];
 
 export class AmazonScraper implements IScraper {
@@ -46,29 +44,54 @@ export class AmazonScraper implements IScraper {
       return null;
     }
     try {
-      const locale = process.env.SCRAPER_LOCALE ?? "es-ES";
       const context = await browser.newContext({
         userAgent:
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        locale,
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+        locale: "en-US",
         extraHTTPHeaders: {
-          "Accept-Language": `${locale},${locale.split("-")[0]};q=0.9,en;q=0.8`,
+          "Accept-Language": "en-US,en;q=0.9",
         },
+      });
+
+      // Patch the most common headless-browser detection vectors before any
+      // page script runs. navigator.webdriver is the primary Amazon check.
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, "webdriver", { get: () => undefined });
+        Object.assign(window, { chrome: { runtime: {} } });
+        Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
+        Object.defineProperty(navigator, "languages", { get: () => ["en-US", "en"] });
       });
 
       const page = await context.newPage();
 
       try {
-        // networkidle waits for JavaScript to render the AOD panel and price widgets
-        await page.goto(scrapeUrl, { waitUntil: "networkidle", timeout: 45_000 });
+        // "load" fires once the page is parsed and initial scripts run.
+        // We then wait for product content elements explicitly — more reliable than
+        // "networkidle" which can time out on amazon.com due to ongoing background requests.
+        await page.goto(scrapeUrl, { waitUntil: "load", timeout: 30_000 });
+        await page
+          .waitForSelector("#aod-offer-list, #aod-pinned-offer, #productTitle, #captchacharacters", {
+            timeout: 20_000,
+          })
+          .catch(() => {});
       } catch (err) {
         console.warn("[AmazonScraper] Navigation failed:", (err as Error).message);
         return null;
       }
 
-      // Detect CAPTCHA
-      const bodyText = await page.locator("body").textContent({ timeout: 5_000 }).catch(() => "");
-      if (bodyText?.includes("captchacharacters") || bodyText?.includes("Type the characters")) {
+      // Detect CAPTCHA — covers input field IDs, instruction text, page title, and redirect URL
+      const [bodyText, pageTitle, pageUrl] = await Promise.all([
+        page.locator("body").textContent({ timeout: 5_000 }).catch(() => ""),
+        page.title().catch(() => ""),
+        Promise.resolve(page.url()),
+      ]);
+      if (
+        bodyText?.includes("captchacharacters") ||
+        bodyText?.includes("Type the characters") ||
+        bodyText?.includes("Enter the characters you see below") ||
+        pageTitle.includes("Robot Check") ||
+        pageUrl.includes("validateCaptcha")
+      ) {
         console.warn("[AmazonScraper] CAPTCHA detected for:", scrapeUrl);
         return null;
       }
@@ -176,8 +199,6 @@ async function extractSellers(page: PlaywrightPage): Promise<Seller[]> {
       const shipping =
         !shippingSection ||
         shippingRaw.includes("free") ||
-        shippingRaw.includes("gratis") ||
-        shippingRaw.includes("envío gratis") ||
         shippingRaw.trim() === ""
           ? 0
           : (parsePrice(shippingRaw) ?? 0);
