@@ -96,6 +96,18 @@ describe("getAmazonDomainInfo", () => {
     expect(getAmazonDomainInfo("https://www.amazon.co.uk/dp/B000AAAAAA")).toEqual({ currency: "GBP", locale: "en-GB" });
   });
 
+  it("returns EUR/nl-BE for amazon.com.be", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.com.be/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "nl-BE" });
+  });
+
+  it("returns EGP/ar-EG for amazon.eg", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.eg/dp/B000AAAAAA")).toEqual({ currency: "EGP", locale: "ar-EG" });
+  });
+
+  it("returns CNY/zh-CN for amazon.cn", () => {
+    expect(getAmazonDomainInfo("https://www.amazon.cn/dp/B000AAAAAA")).toEqual({ currency: "CNY", locale: "zh-CN" });
+  });
+
   it("returns USD/en-US fallback for unknown domain", () => {
     expect(getAmazonDomainInfo("https://www.amazon.xyz/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US" });
   });

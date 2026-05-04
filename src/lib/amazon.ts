@@ -61,6 +61,9 @@ const DOMAIN_INFO: Record<string, { currency: string; locale: string }> = {
   "amazon.sg":     { currency: "SGD", locale: "en-SG" },
   "amazon.ae":     { currency: "AED", locale: "ar-AE" },
   "amazon.sa":     { currency: "SAR", locale: "ar-SA" },
+  "amazon.com.be": { currency: "EUR", locale: "nl-BE" },
+  "amazon.eg":     { currency: "EGP", locale: "ar-EG" },
+  "amazon.cn":     { currency: "CNY", locale: "zh-CN" },
 };
 
 export function getAmazonDomainInfo(url: string): { currency: string; locale: string } {
