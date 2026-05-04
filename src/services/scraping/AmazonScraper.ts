@@ -57,7 +57,7 @@ export class AmazonScraper implements IScraper {
       // page script runs. navigator.webdriver is the primary Amazon check.
       await context.addInitScript(() => {
         Object.defineProperty(navigator, "webdriver", { get: () => undefined });
-        (window as Record<string, unknown>)["chrome"] = { runtime: {} };
+        Object.assign(window, { chrome: { runtime: {} } });
         Object.defineProperty(navigator, "plugins", { get: () => [1, 2, 3, 4, 5] });
         Object.defineProperty(navigator, "languages", { get: () => ["en-US", "en"] });
       });
