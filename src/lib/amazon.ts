@@ -41,34 +41,34 @@ export function buildScrapeUrl(url: string): string {
   }
 }
 
-const DOMAIN_INFO: Record<string, { currency: string; locale: string }> = {
-  "amazon.com":    { currency: "USD", locale: "en-US" },
-  "amazon.co.uk":  { currency: "GBP", locale: "en-GB" },
-  "amazon.de":     { currency: "EUR", locale: "de-DE" },
-  "amazon.fr":     { currency: "EUR", locale: "fr-FR" },
-  "amazon.es":     { currency: "EUR", locale: "es-ES" },
-  "amazon.it":     { currency: "EUR", locale: "it-IT" },
-  "amazon.co.jp":  { currency: "JPY", locale: "ja-JP" },
-  "amazon.ca":     { currency: "CAD", locale: "en-CA" },
-  "amazon.com.au": { currency: "AUD", locale: "en-AU" },
-  "amazon.com.br": { currency: "BRL", locale: "pt-BR" },
-  "amazon.com.mx": { currency: "MXN", locale: "es-MX" },
-  "amazon.nl":     { currency: "EUR", locale: "nl-NL" },
-  "amazon.pl":     { currency: "PLN", locale: "pl-PL" },
-  "amazon.se":     { currency: "SEK", locale: "sv-SE" },
-  "amazon.com.tr": { currency: "TRY", locale: "tr-TR" },
-  "amazon.in":     { currency: "INR", locale: "en-IN" },
-  "amazon.sg":     { currency: "SGD", locale: "en-SG" },
-  "amazon.ae":     { currency: "AED", locale: "ar-AE" },
-  "amazon.sa":     { currency: "SAR", locale: "ar-SA" },
-  "amazon.com.be": { currency: "EUR", locale: "nl-BE" },
+const DOMAIN_INFO: Record<string, { currency: string; locale: string; countryCode: string }> = {
+  "amazon.com":    { currency: "USD", locale: "en-US", countryCode: "US" },
+  "amazon.co.uk":  { currency: "GBP", locale: "en-GB", countryCode: "GB" },
+  "amazon.de":     { currency: "EUR", locale: "de-DE", countryCode: "DE" },
+  "amazon.fr":     { currency: "EUR", locale: "fr-FR", countryCode: "FR" },
+  "amazon.es":     { currency: "EUR", locale: "es-ES", countryCode: "ES" },
+  "amazon.it":     { currency: "EUR", locale: "it-IT", countryCode: "IT" },
+  "amazon.co.jp":  { currency: "JPY", locale: "ja-JP", countryCode: "JP" },
+  "amazon.ca":     { currency: "CAD", locale: "en-CA", countryCode: "CA" },
+  "amazon.com.au": { currency: "AUD", locale: "en-AU", countryCode: "AU" },
+  "amazon.com.br": { currency: "BRL", locale: "pt-BR", countryCode: "BR" },
+  "amazon.com.mx": { currency: "MXN", locale: "es-MX", countryCode: "MX" },
+  "amazon.nl":     { currency: "EUR", locale: "nl-NL", countryCode: "NL" },
+  "amazon.pl":     { currency: "PLN", locale: "pl-PL", countryCode: "PL" },
+  "amazon.se":     { currency: "SEK", locale: "sv-SE", countryCode: "SE" },
+  "amazon.com.tr": { currency: "TRY", locale: "tr-TR", countryCode: "TR" },
+  "amazon.in":     { currency: "INR", locale: "en-IN", countryCode: "IN" },
+  "amazon.sg":     { currency: "SGD", locale: "en-SG", countryCode: "SG" },
+  "amazon.ae":     { currency: "AED", locale: "ar-AE", countryCode: "AE" },
+  "amazon.sa":     { currency: "SAR", locale: "ar-SA", countryCode: "SA" },
+  "amazon.com.be": { currency: "EUR", locale: "nl-BE", countryCode: "BE" },
 };
 
-export function getAmazonDomainInfo(url: string): { currency: string; locale: string } {
+export function getAmazonDomainInfo(url: string): { currency: string; locale: string; countryCode: string } {
   try {
     const hostname = new URL(url).hostname.replace(/^www\./, "");
-    return DOMAIN_INFO[hostname] ?? { currency: "USD", locale: "en-US" };
+    return DOMAIN_INFO[hostname] ?? { currency: "USD", locale: "en-US", countryCode: "US" };
   } catch {
-    return { currency: "USD", locale: "en-US" };
+    return { currency: "USD", locale: "en-US", countryCode: "US" };
   }
 }

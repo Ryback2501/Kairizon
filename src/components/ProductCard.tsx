@@ -7,6 +7,7 @@ import { Input } from "./ui/Input";
 import { Toggle } from "./ui/Toggle";
 import type { Seller } from "@/types";
 import { isAmazonSeller, getAmazonDomainInfo } from "@/lib/amazon";
+import { AmazonStoreBadge } from "./ui/AmazonStoreBadge";
 import { deduplicateSellers } from "@/lib/pricing";
 
 interface ProductCardProps {
@@ -228,8 +229,8 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
   return (
     <Card className="flex gap-4">
-      {product.image && (
-        <div className="shrink-0">
+      <div className="shrink-0 flex flex-col items-center gap-1.5">
+        {product.image && (
           <img
             src={product.image}
             alt={product.title}
@@ -237,8 +238,9 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             height={72}
             className="rounded object-contain bg-brand-subtle"
           />
-        </div>
-      )}
+        )}
+        <AmazonStoreBadge url={product.url} />
+      </div>
 
       <div className="flex-1 min-w-0">
         {/* Title + delete button */}

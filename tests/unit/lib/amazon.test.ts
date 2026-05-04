@@ -81,30 +81,30 @@ describe("buildScrapeUrl", () => {
 
 describe("getAmazonDomainInfo", () => {
   it("returns JPY/ja-JP for amazon.co.jp", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.co.jp/dp/B000AAAAAA")).toEqual({ currency: "JPY", locale: "ja-JP" });
+    expect(getAmazonDomainInfo("https://www.amazon.co.jp/dp/B000AAAAAA")).toEqual({ currency: "JPY", locale: "ja-JP", countryCode: "JP" });
   });
 
   it("returns USD/en-US for amazon.com", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.com/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US" });
+    expect(getAmazonDomainInfo("https://www.amazon.com/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US", countryCode: "US" });
   });
 
   it("returns EUR/es-ES for amazon.es", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.es/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "es-ES" });
+    expect(getAmazonDomainInfo("https://www.amazon.es/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "es-ES", countryCode: "ES" });
   });
 
   it("returns GBP/en-GB for amazon.co.uk", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.co.uk/dp/B000AAAAAA")).toEqual({ currency: "GBP", locale: "en-GB" });
+    expect(getAmazonDomainInfo("https://www.amazon.co.uk/dp/B000AAAAAA")).toEqual({ currency: "GBP", locale: "en-GB", countryCode: "GB" });
   });
 
   it("returns EUR/nl-BE for amazon.com.be", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.com.be/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "nl-BE" });
+    expect(getAmazonDomainInfo("https://www.amazon.com.be/dp/B000AAAAAA")).toEqual({ currency: "EUR", locale: "nl-BE", countryCode: "BE" });
   });
 
   it("returns USD/en-US fallback for unknown domain", () => {
-    expect(getAmazonDomainInfo("https://www.amazon.xyz/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US" });
+    expect(getAmazonDomainInfo("https://www.amazon.xyz/dp/B000AAAAAA")).toEqual({ currency: "USD", locale: "en-US", countryCode: "US" });
   });
 
   it("returns USD/en-US fallback for invalid URL", () => {
-    expect(getAmazonDomainInfo("not-a-url")).toEqual({ currency: "USD", locale: "en-US" });
+    expect(getAmazonDomainInfo("not-a-url")).toEqual({ currency: "USD", locale: "en-US", countryCode: "US" });
   });
 });
