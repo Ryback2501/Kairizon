@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
-import type { Product } from "@prisma/client";
+import type { Product } from "@/types";
 import { Card } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Toggle } from "./ui/Toggle";
 import type { Seller } from "@/types";
-import { isAmazonSeller } from "@/lib/amazon";
+import { isAmazonSeller, getAmazonDomainInfo } from "@/lib/amazon";
+import { AmazonStoreBadge } from "./ui/AmazonStoreBadge";
 import { deduplicateSellers } from "@/lib/pricing";
 
 interface ProductCardProps {
@@ -211,6 +211,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     ? mainPriceSeller.price + mainPriceSeller.shipping
     : null;
   const isUsed = mainPriceSeller?.isSecondHand ?? false;
+  const { currency, locale } = getAmazonDomainInfo(product.url);
   // Stock alert toggle enabled only when Amazon is selected and has no stock
   const stockAlertEnabled = isAmazonSelected && !amazonSeller;
 
@@ -228,17 +229,18 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
   return (
     <Card className="flex gap-4">
-      {product.image && (
-        <div className="shrink-0">
-          <Image
+      <div className="shrink-0 flex flex-col items-center gap-1.5">
+        {product.image && (
+          <img
             src={product.image}
             alt={product.title}
             width={72}
             height={72}
             className="rounded object-contain bg-brand-subtle"
           />
-        </div>
-      )}
+        )}
+        <AmazonStoreBadge url={product.url} />
+      </div>
 
       <div className="flex-1 min-w-0">
         {/* Title + delete button */}
@@ -280,7 +282,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               </span>
             ) : mainPrice !== null ? (
               <span className="font-semibold text-brand-charcoal text-sm flex items-baseline gap-1">
-                {mainPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                {mainPrice.toLocaleString(locale, { style: "currency", currency })}
                 {isUsed && <span className="text-amber-600 font-medium text-xs">(used)</span>}
               </span>
             ) : (
@@ -315,7 +317,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <>
                 <li className="text-xs text-brand-gray">
                   {product.targetPrice !== null
-                    ? `Alert below ${product.targetPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`
+                    ? `Alert below ${product.targetPrice.toLocaleString(locale, { style: "currency", currency })}`
                     : "No price alert"}
                 </li>
                 {stockAlertEnabled && product.trackStock && (
@@ -323,7 +325,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                 )}
                 {otherOptionPrice !== null && (
                   <li className="text-xs text-brand-gray">
-                    {`Other options from ${otherOptionPrice.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}`}
+                    {`Other options from ${otherOptionPrice.toLocaleString(locale, { style: "currency", currency })}`}
                   </li>
                 )}
               </>
@@ -397,15 +399,15 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                       ) : (
                         <>
                           <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
-                            {seller.price.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                            {seller.price.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                           <td className="py-0.5 pl-3 text-right text-brand-gray">
                             {seller.shipping === 0
                               ? "Free"
-                              : seller.shipping.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                              : seller.shipping.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                           <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
-                            {total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                            {total.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                         </>
                       )}
@@ -441,21 +443,6 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
                 )}
-              </button>
-              {/* Cancel */}
-              <button
-                onClick={() => {
-                  setEditingTarget(false);
-                  setTargetInput(product.targetPrice?.toString() ?? "");
-                }}
-                className="w-9 h-9 rounded-full flex items-center justify-center bg-brand-subtle text-brand-charcoal border border-black/10 hover:opacity-80 transition-opacity"
-                aria-label="Cancel editing"
-                title="Cancel"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
               </button>
             </>
           ) : (

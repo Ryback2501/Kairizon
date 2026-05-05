@@ -2,7 +2,7 @@ import type { IProductRepository } from "@/repositories/IProductRepository";
 import type { IScraper } from "@/services/scraping/IScraper";
 import type { INotificationService } from "@/services/notification/INotificationService";
 import type { IPriceCheckService } from "./IPriceCheckService";
-import type { Product } from "@prisma/client";
+import type { Product } from "@/types";
 import { randomDelay } from "@/services/scraping/AmazonScraper";
 import { computePrice } from "@/lib/pricing";
 import { isAmazonSeller } from "@/lib/amazon";

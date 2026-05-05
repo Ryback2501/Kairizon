@@ -55,18 +55,6 @@ test.describe("Dashboard — product card", () => {
     await expect(card.getByText(/alert below/i)).toBeVisible();
   });
 
-  test("cancel button exits edit mode without saving", async ({ page }) => {
-    await page.goto("/");
-    const card = getCard(page, PRODUCT_TITLE);
-    await card.getByRole("button", { name: /edit target price/i }).click();
-
-    await card.getByPlaceholder("0.00").fill("999");
-    await card.getByRole("button", { name: "Cancel editing" }).click();
-
-    await expect(card.getByPlaceholder("0.00")).not.toBeVisible();
-    await expect(card.getByText("999,00")).not.toBeVisible();
-  });
-
   test("stock alert toggle is visible in edit mode", async ({ page }) => {
     await page.goto("/");
     const card = getCard(page, PRODUCT_TITLE);

@@ -2,7 +2,7 @@ import type { IScraper } from "@/services/scraping/IScraper";
 import type { INotificationService } from "@/services/notification/INotificationService";
 import type { IProductRepository } from "@/repositories/IProductRepository";
 import { PriceCheckService } from "@/services/price-check/PriceCheckService";
-import type { Product } from "@prisma/client";
+import type { Product } from "@/types";
 import type { Seller } from "@/types";
 
 function makeProduct(overrides: Partial<Product> = {}): Product {

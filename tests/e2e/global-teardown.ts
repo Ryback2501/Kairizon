@@ -1,13 +1,14 @@
-import { PrismaClient } from "@prisma/client";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import Database from "better-sqlite3";
+import { resolve } from "path";
 
-export default async function globalTeardown() {
-  const adapter = new PrismaLibSql({ url: process.env.DATABASE_URL ?? "" });
-  const prisma = new PrismaClient({ adapter });
+export default function globalTeardown() {
+  const url = process.env.DATABASE_URL ?? "";
+  const filePath = url.startsWith("file:") ? url.slice(5) : url;
+  const db = new Database(resolve(filePath));
   try {
-    await prisma.product.deleteMany({ where: { asin: "B00E2ETEST1" } });
-    await prisma.appSettings.deleteMany({ where: { id: "singleton" } });
+    db.prepare(`DELETE FROM "Product" WHERE "asin" = ?`).run("B00E2ETEST1");
+    db.prepare(`DELETE FROM "AppSettings" WHERE "id" = 'singleton'`).run();
   } finally {
-    await prisma.$disconnect();
+    db.close();
   }
 }

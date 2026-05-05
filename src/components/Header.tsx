@@ -13,6 +13,7 @@ interface HeaderProps {
 export function Header({ onOpenSettings, onOpenInfo, onAdded, onRefreshed }: HeaderProps) {
   const [updating, setUpdating] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [addError, setAddError] = useState<string | null>(null);
 
   async function handleRefreshAll() {
     setRefreshError(null);
@@ -34,9 +35,9 @@ export function Header({ onOpenSettings, onOpenInfo, onAdded, onRefreshed }: Hea
 
   return (
     <header className="shrink-0 border-b border-black/8 bg-white">
-      {refreshError && (
+      {(addError || refreshError) && (
         <div className="bg-red-50 border-b border-red-100 px-4 py-2 text-xs text-red-600 text-center">
-          {refreshError}
+          {addError ?? refreshError}
         </div>
       )}
       <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-4">
@@ -47,7 +48,7 @@ export function Header({ onOpenSettings, onOpenInfo, onAdded, onRefreshed }: Hea
         <div className="h-5 w-px bg-black/10 shrink-0" />
 
         <div className="flex-1 min-w-0">
-          <AddProductForm onAdded={onAdded} />
+          <AddProductForm onAdded={onAdded} onError={setAddError} />
         </div>
 
         <div className="h-5 w-px bg-black/10 shrink-0" />
