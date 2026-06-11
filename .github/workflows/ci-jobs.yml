@@ -1,0 +1,135 @@
+name: CI jobs
+
+on:
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:integration
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm audit --audit-level=critical
+
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Use the official Playwright image: Chromium + system deps are baked in, so
+    # CI never downloads the browser from the Playwright CDN at run time. The tag
+    # MUST match the @playwright/test version in package-lock.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+    env:
+      DATABASE_FILE: test.db
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - name: Set DATABASE_URL
+        run: echo "DATABASE_URL=file:./data/$DATABASE_FILE" >> "$GITHUB_ENV"
+      - name: Build
+        run: npm run build
+      - name: Create data directory
+        run: mkdir -p data
+      - name: Start app server
+        run: NODE_ENV=production node dist/server.js &
+      - name: Wait for app to be ready
+        run: timeout 30 sh -c 'until curl -sf http://localhost:3000/api/status -o /dev/null; do sleep 1; done'
+      - name: E2E tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: npm run test:e2e
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: playwright-report/
+          retention-days: 7
