@@ -70,7 +70,7 @@ export function ProductList({ refreshKey }: ProductListProps) {
       {loading ? (
         <p className="text-sm text-brand-gray text-center py-8">Loading…</p>
       ) : error ? (
-        <p className="text-sm text-red-500 text-center py-8">Failed to load products. Please refresh the page.</p>
+        <p className="text-sm text-red-500 dark:text-red-400 text-center py-8">Failed to load products. Please refresh the page.</p>
       ) : products.length === 0 ? (
         <p className="text-sm text-brand-gray text-center py-8">
           No products tracked yet. Paste an Amazon URL above to get started.

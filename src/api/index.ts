@@ -297,6 +297,7 @@ api.put("/settings", async (c) => {
       smtpUser: typeof body.smtpUser === "string" ? body.smtpUser : current.smtpUser,
       smtpPass: typeof body.smtpPass === "string" && body.smtpPass !== SMTPPASS_MASK ? body.smtpPass : current.smtpPass,
       smtpFrom: typeof body.smtpFrom === "string" ? body.smtpFrom : current.smtpFrom,
+      theme: body.theme === "dark" || body.theme === "light" ? body.theme : current.theme,
     });
     return c.json(maskSettings(updated));
   } catch (err) {

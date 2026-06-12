@@ -7,6 +7,7 @@ const VALID: AppSettingsData = {
   smtpUser: "user@gmail.com",
   smtpPass: "secret",
   smtpFrom: "Kairizon <user@gmail.com>",
+  theme: "light",
 };
 
 describe("isSettingsConfigured", () => {

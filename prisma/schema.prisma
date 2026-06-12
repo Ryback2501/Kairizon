@@ -14,6 +14,7 @@ model AppSettings {
   smtpUser String @default("")
   smtpPass String @default("")
   smtpFrom String @default("")
+  theme    String @default("light")
 }
 
 model Product {

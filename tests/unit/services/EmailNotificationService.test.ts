@@ -23,6 +23,7 @@ const CONFIGURED_SETTINGS: AppSettingsData = {
   smtpUser: "user@gmail.com",
   smtpPass: "secret",
   smtpFrom: "Kairizon <user@gmail.com>",
+  theme: "light",
 };
 
 const EMPTY_SETTINGS: AppSettingsData = {
@@ -31,6 +32,7 @@ const EMPTY_SETTINGS: AppSettingsData = {
   smtpUser: "",
   smtpPass: "",
   smtpFrom: "",
+  theme: "light",
 };
 
 function makeSettingsRepo(settings: AppSettingsData): jest.Mocked<IAppSettingsRepository> {
