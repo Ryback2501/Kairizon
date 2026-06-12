@@ -44,18 +44,18 @@ export function InfoModal({ onClose }: InfoModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm">
+      <div className="bg-brand-canvas rounded-xl shadow-xl w-full max-w-sm">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-black/8">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-black/8 dark:border-white/10">
           <div>
-            <h2 className="font-cal text-base font-semibold text-brand-charcoal">Kairizon</h2>
+            <h2 className="font-cal text-base font-semibold text-brand-ink">Kairizon</h2>
             {status && (
               <p className="text-xs text-brand-gray">v{status.version}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-brand-charcoal hover:bg-brand-subtle transition-colors"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-brand-ink hover:bg-brand-subtle transition-colors"
             aria-label="Close"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -73,8 +73,8 @@ export function InfoModal({ onClose }: InfoModalProps) {
             let it run — prices are checked automatically every 30 minutes.
           </p>
 
-          <div className="border-t border-black/8 pt-4">
-            <p className="text-xs font-semibold text-brand-charcoal mb-2">Price check status</p>
+          <div className="border-t border-black/8 dark:border-white/10 pt-4">
+            <p className="text-xs font-semibold text-brand-ink mb-2">Price check status</p>
 
             {!cron ? (
               <p className="text-xs text-brand-gray">Loading…</p>
@@ -84,14 +84,14 @@ export function InfoModal({ onClose }: InfoModalProps) {
               <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-brand-gray">Last run</span>
-                  <span className="text-xs text-brand-charcoal font-medium">
+                  <span className="text-xs text-brand-ink font-medium">
                     {formatRelativeTime(cron.lastRunAt)}
                   </span>
                 </div>
                 {cron.lastRunDurationMs !== null && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-brand-gray">Duration</span>
-                    <span className="text-xs text-brand-charcoal font-medium">
+                    <span className="text-xs text-brand-ink font-medium">
                       {formatDuration(cron.lastRunDurationMs)}
                     </span>
                   </div>
@@ -99,11 +99,11 @@ export function InfoModal({ onClose }: InfoModalProps) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-brand-gray">Result</span>
                   {cron.currentlyRunning ? (
-                    <span className="text-xs text-amber-600 font-medium">Running…</span>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Running…</span>
                   ) : cron.lastRunSuccess ? (
-                    <span className="text-xs text-green-600 font-medium">Success</span>
+                    <span className="text-xs text-green-600 dark:text-green-400 font-medium">Success</span>
                   ) : (
-                    <span className="text-xs text-red-600 font-medium">Failed</span>
+                    <span className="text-xs text-red-600 dark:text-red-400 font-medium">Failed</span>
                   )}
                 </div>
               </div>

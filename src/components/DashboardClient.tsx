@@ -14,6 +14,7 @@ const EMPTY_SETTINGS: AppSettingsData = {
   smtpUser: "",
   smtpPass: "",
   smtpFrom: "",
+  theme: "light",
 };
 
 export function DashboardClient() {
@@ -41,11 +42,28 @@ export function DashboardClient() {
     return () => controller.abort();
   }, []);
 
+  // Apply the active theme to the document root so the `dark` variant engages.
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", currentSettings.theme === "dark");
+  }, [currentSettings.theme]);
+
   function handleSettingsSaved(settings: AppSettingsData) {
     setCurrentSettings(settings);
     const configured = isSettingsConfigured(settings);
     setSettingsConfigured(configured);
     if (configured) setShowSettings(false);
+  }
+
+  function handleToggleTheme() {
+    const nextTheme: AppSettingsData["theme"] = currentSettings.theme === "dark" ? "light" : "dark";
+    setCurrentSettings((s) => ({ ...s, theme: nextTheme }));
+    void fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme: nextTheme }),
+    }).catch((err: unknown) => {
+      console.error("[DashboardClient] Failed to persist theme:", err);
+    });
   }
 
   return (
@@ -55,6 +73,8 @@ export function DashboardClient() {
         onOpenInfo={() => setShowInfo(true)}
         onAdded={() => setRefreshKey((k) => k + 1)}
         onRefreshed={() => setRefreshKey((k) => k + 1)}
+        theme={currentSettings.theme}
+        onToggleTheme={handleToggleTheme}
       />
       <main className="flex-1 overflow-y-auto bg-brand-subtle py-10">
         <div className="max-w-2xl mx-auto px-4">

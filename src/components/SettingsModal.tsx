@@ -29,10 +29,13 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
     }
     setSaving(true);
     try {
+      // Send only the SMTP fields — theme is managed from the header menu and
+      // must not be clobbered by saving SMTP settings.
+      const { smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom } = settings;
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
+        body: JSON.stringify({ smtpHost, smtpPort, smtpUser, smtpPass, smtpFrom }),
       });
       if (!res.ok) {
         setError("Failed to save settings");
@@ -49,14 +52,14 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div className="bg-brand-canvas rounded-xl shadow-xl w-full max-w-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-black/8">
-          <h2 className="font-cal text-base font-semibold text-brand-charcoal">Settings</h2>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-black/8 dark:border-white/10">
+          <h2 className="font-cal text-base font-semibold text-brand-ink">Settings</h2>
           {canClose && (
             <button
               onClick={onClose}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-brand-charcoal hover:bg-brand-subtle transition-colors"
+              className="w-7 h-7 rounded-full flex items-center justify-center text-brand-gray hover:text-brand-ink hover:bg-brand-subtle transition-colors"
               aria-label="Close settings"
               title="Close"
             >
@@ -71,13 +74,13 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
         {/* Body */}
         <form onSubmit={handleSave} className="px-6 py-5 flex flex-col gap-4">
           {!canClose && (
-            <p className="text-xs text-brand-gray bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            <p className="text-xs text-brand-gray bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-lg px-3 py-2">
               Fill in all required fields to start using Kairizon.
             </p>
           )}
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-brand-charcoal">SMTP Host <span className="text-red-500">*</span></label>
+            <label className="text-xs font-semibold text-brand-ink">SMTP Host <span className="text-red-500 dark:text-red-400">*</span></label>
             <Input
               value={settings.smtpHost}
               onChange={(e) => set("smtpHost", e.target.value)}
@@ -87,7 +90,7 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-brand-charcoal">SMTP Port</label>
+            <label className="text-xs font-semibold text-brand-ink">SMTP Port</label>
             <Input
               type="number"
               value={settings.smtpPort.toString()}
@@ -99,7 +102,7 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-brand-charcoal">SMTP User (email) <span className="text-red-500">*</span></label>
+            <label className="text-xs font-semibold text-brand-ink">SMTP User (email) <span className="text-red-500 dark:text-red-400">*</span></label>
             <Input
               type="email"
               value={settings.smtpUser}
@@ -110,7 +113,7 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-brand-charcoal">SMTP Password <span className="text-red-500">*</span></label>
+            <label className="text-xs font-semibold text-brand-ink">SMTP Password <span className="text-red-500 dark:text-red-400">*</span></label>
             <Input
               type="password"
               value={settings.smtpPass}
@@ -121,7 +124,7 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-brand-charcoal">From address <span className="text-red-500">*</span></label>
+            <label className="text-xs font-semibold text-brand-ink">From address <span className="text-red-500 dark:text-red-400">*</span></label>
             <Input
               value={settings.smtpFrom}
               onChange={(e) => set("smtpFrom", e.target.value)}
@@ -130,7 +133,7 @@ export function SettingsModal({ initialSettings, onClose, onSaved }: SettingsMod
             />
           </div>
 
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="flex justify-end pt-1">
             <button

@@ -222,7 +222,7 @@ export function AmazonStoreBadge({ url }: AmazonStoreBadgeProps) {
       href={origin}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-1 text-[10px] text-brand-gray hover:text-brand-charcoal transition-colors"
+      className="flex items-center gap-1 text-[10px] text-brand-gray hover:text-brand-ink transition-colors"
       title={`Open ${domain}`}
     >
       {FlagContent && (

@@ -1,4 +1,4 @@
-import { extractAsin, isValidAmazonUrl, buildScrapeUrl, getAmazonDomainInfo } from "@/lib/amazon";
+import { extractAsin, isValidAmazonUrl, buildScrapeUrl, getAmazonDomainInfo, buildCamelUrl } from "@/lib/amazon";
 
 describe("extractAsin", () => {
   it("extracts ASIN from /dp/ URL", () => {
@@ -106,5 +106,52 @@ describe("getAmazonDomainInfo", () => {
 
   it("returns USD/en-US fallback for invalid URL", () => {
     expect(getAmazonDomainInfo("not-a-url")).toEqual({ currency: "USD", locale: "en-US", countryCode: "US" });
+  });
+});
+
+describe("buildCamelUrl", () => {
+  // Marketplaces tracked by camelcamelcamel → expected /product/<ASIN> URL.
+  it.each([
+    ["https://www.amazon.com/FINAL-FANTASY-Collection/dp/B0DCKFWW1V/", "https://www.camelcamelcamel.com/product/B0DCKFWW1V"],
+    ["https://www.amazon.co.uk/Ezilif-90x70x110cm/dp/B0DZC1T8H3?th=1", "https://uk.camelcamelcamel.com/product/B0DZC1T8H3"],
+    ["https://www.amazon.de/-/en/DJI-Mini-Fly-More-Combo/dp/B0CQ87N7TS/", "https://de.camelcamelcamel.com/product/B0CQ87N7TS"],
+    ["https://www.amazon.fr/Tube-Resistance-Band/dp/B0FNMNDCN4/", "https://fr.camelcamelcamel.com/product/B0FNMNDCN4"],
+    ["https://www.amazon.es/-/en/Dodot-Wipes/dp/B09GPJHCQL/", "https://es.camelcamelcamel.com/product/B09GPJHCQL"],
+    ["https://www.amazon.it/-/en/Aldo-Cazzullo-ebook/dp/B0F7L6HQJ4", "https://it.camelcamelcamel.com/product/B0F7L6HQJ4"],
+    ["https://www.amazon.co.jp/-/en/Takara-Tomica/dp/B0C3G736Q3/", "https://jp.camelcamelcamel.com/product/B0C3G736Q3"],
+    ["https://www.amazon.ca/LEGO-Buildable-Minifigure/dp/B0CV236PM6", "https://ca.camelcamelcamel.com/product/B0CV236PM6"],
+    ["https://www.amazon.com.au/PANDORA-563050C00/dp/B0CV43BNCP", "https://au.camelcamelcamel.com/product/B0CV43BNCP"],
+  ])("maps supported store %s", (input, expected) => {
+    expect(buildCamelUrl(input)).toBe(expected);
+  });
+
+  // Marketplaces with no camelcamelcamel presence → null (button hidden).
+  it.each([
+    ["https://www.amazon.com.br/Novo-Echo-Show-11/dp/B0DYC5S7DK/?th=1"],
+    ["https://www.amazon.com.mx/Contenedores/dp/B0BT8HWSSK/"],
+    ["https://www.amazon.nl/-/en/DeLonghi-ECAM292/dp/B09CGRQ965"],
+    ["https://www.amazon.pl/TP-Link-Tapo-H500/dp/B0F7Y3PMK8"],
+    ["https://www.amazon.se/-/en/Deconovo-Blackout/dp/B08DR3CWRX/"],
+    ["https://www.amazon.com.tr/LEGO-Star-Wars/dp/B0FPXFW8XB"],
+    ["https://www.amazon.in/Multipurpose-Kitchen/dp/B095C981FC/"],
+    ["https://www.amazon.sg/Sony-WF-C710N/dp/B0F2GLCWG9?rnid=6450031051&s=electronics"],
+    ["https://www.amazon.ae/Tomodachi-Life/dp/B0GKPV34CK"],
+    ["https://www.amazon.sa/-/en/SPEARPC-Wireless/dp/B0GSLHSYL6"],
+    ["https://www.amazon.com.be/-/en/LEGO-Icons/dp/B0D5W8J5YV?ref_=pd_hp_d_btf_unk_B0D5W8J5YV"],
+    ["https://www.amazon.eg/-/en/Unionaire-ARTO012HR5RCWPK/dp/B0965M11XZ/?th=1"],
+  ])("returns null for unsupported store %s", (input) => {
+    expect(buildCamelUrl(input)).toBeNull();
+  });
+
+  it("returns null for a non-Amazon URL", () => {
+    expect(buildCamelUrl("https://www.ebay.com/item/123456")).toBeNull();
+  });
+
+  it("returns null for an Amazon URL without an ASIN", () => {
+    expect(buildCamelUrl("https://www.amazon.com/s?k=headphones")).toBeNull();
+  });
+
+  it("returns null for an invalid URL", () => {
+    expect(buildCamelUrl("not-a-url")).toBeNull();
   });
 });

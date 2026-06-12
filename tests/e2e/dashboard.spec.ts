@@ -131,10 +131,11 @@ test.describe("Dashboard — add product", () => {
   });
 });
 
-test.describe("Dashboard — refresh button", () => {
-  test("shows a spinner while refreshing and re-enables when done", async ({ page }) => {
+test.describe("Dashboard — refresh menu option", () => {
+  test("the Refresh menu item triggers a refresh request", async ({ page }) => {
+    let refreshed = false;
     await page.route("**/api/products/refresh", async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      refreshed = true;
       await route.fulfill({
         status: 200,
         contentType: "application/json",
@@ -143,11 +144,12 @@ test.describe("Dashboard — refresh button", () => {
     });
 
     await page.goto("/");
-    const refreshBtn = page.getByRole("button", { name: "Refresh all products" });
-    await refreshBtn.click();
+    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("menuitem", { name: /refresh/i }).click();
 
-    await expect(refreshBtn).toBeDisabled();
-    await expect(refreshBtn).toBeEnabled({ timeout: 5000 });
+    await expect.poll(() => refreshed).toBe(true);
+    // Menu closes after the action.
+    await expect(page.getByRole("menuitem", { name: /refresh/i })).toHaveCount(0);
   });
 });
 
@@ -158,5 +160,48 @@ test.describe("Dashboard — delete product", () => {
     await card.getByRole("button", { name: "Remove product" }).click();
 
     await expect(page.getByText(PRODUCT_TITLE)).not.toBeVisible({ timeout: 5000 });
+  });
+});
+
+test.describe("Header menu", () => {
+  test("an amazon.com product shows a camelcamelcamel link", async ({ page }) => {
+    // Serve a known amazon.com product so this test is independent of the
+    // shared seeded row (which other tests delete).
+    await page.route("**/api/products", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([MOCK_PRODUCT]),
+      });
+    });
+
+    await page.goto("/");
+    const card = getCard(page, MOCK_PRODUCT.title);
+    const camel = card.getByRole("link", { name: "Check price history at camelcamelcamel.com" });
+    await expect(camel).toHaveAttribute(
+      "href",
+      `https://www.camelcamelcamel.com/product/${ADD_ASIN}`,
+    );
+  });
+
+  test("theme toggle switches and persists across reloads", async ({ page }) => {
+    await page.goto("/");
+    const html = page.locator("html");
+
+    // Default light.
+    await expect(html).not.toHaveClass(/dark/);
+
+    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("menuitem", { name: "Dark theme" }).click();
+    await expect(html).toHaveClass(/dark/);
+
+    // Persisted via the database — survives a reload.
+    await page.reload();
+    await expect(html).toHaveClass(/dark/);
+
+    // Restore light so the shared DB state does not leak to other runs.
+    await page.getByRole("button", { name: "Menu" }).click();
+    await page.getByRole("menuitem", { name: "Light theme" }).click();
+    await expect(html).not.toHaveClass(/dark/);
   });
 });

@@ -15,6 +15,7 @@ function makeSettings(overrides: Partial<AppSettingsData> = {}): AppSettingsData
     smtpUser: "user@example.com",
     smtpPass: "secret",
     smtpFrom: "App <user@example.com>",
+    theme: "light",
     ...overrides,
   };
 }

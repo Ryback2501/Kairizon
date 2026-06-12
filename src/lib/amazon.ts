@@ -72,3 +72,41 @@ export function getAmazonDomainInfo(url: string): { currency: string; locale: st
     return { currency: "USD", locale: "en-US", countryCode: "US" };
   }
 }
+
+/**
+ * Maps a supported Amazon marketplace hostname to its camelcamelcamel
+ * subdomain. Only the marketplaces camelcamelcamel actually tracks are listed;
+ * any other store has no camelcamelcamel presence. Keyed by hostname (not the
+ * country code) on purpose: getAmazonDomainInfo falls back to "US" for unknown
+ * domains, which would otherwise produce bogus links for unsupported stores.
+ */
+const CAMEL_SUBDOMAIN_BY_HOST: Record<string, string> = {
+  "amazon.com": "www",
+  "amazon.co.uk": "uk",
+  "amazon.de": "de",
+  "amazon.fr": "fr",
+  "amazon.es": "es",
+  "amazon.it": "it",
+  "amazon.co.jp": "jp",
+  "amazon.ca": "ca",
+  "amazon.com.au": "au",
+};
+
+/**
+ * Builds the camelcamelcamel price-history URL for an Amazon product, e.g.
+ * https://es.camelcamelcamel.com/product/B09GPJHCQL for an amazon.es product.
+ * Returns null when the ASIN can't be extracted or the marketplace is not
+ * tracked by camelcamelcamel (so callers can hide the link).
+ */
+export function buildCamelUrl(url: string): string | null {
+  const asin = extractAsin(url);
+  if (!asin) return null;
+  try {
+    const hostname = new URL(url).hostname.replace(/^www\./, "");
+    const subdomain = CAMEL_SUBDOMAIN_BY_HOST[hostname];
+    if (!subdomain) return null;
+    return `https://${subdomain}.camelcamelcamel.com/product/${asin}`;
+  } catch {
+    return null;
+  }
+}

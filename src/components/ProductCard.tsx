@@ -6,7 +6,7 @@ import { Card } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { Toggle } from "./ui/Toggle";
 import type { Seller } from "@/types";
-import { isAmazonSeller, getAmazonDomainInfo } from "@/lib/amazon";
+import { isAmazonSeller, getAmazonDomainInfo, buildCamelUrl } from "@/lib/amazon";
 import { AmazonStoreBadge } from "./ui/AmazonStoreBadge";
 import { deduplicateSellers } from "@/lib/pricing";
 
@@ -212,6 +212,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
     : null;
   const isUsed = mainPriceSeller?.isSecondHand ?? false;
   const { currency, locale } = getAmazonDomainInfo(product.url);
+  const camelUrl = buildCamelUrl(product.url);
   // Stock alert toggle enabled only when Amazon is selected and has no stock
   const stockAlertEnabled = isAmazonSelected && !amazonSeller;
 
@@ -240,6 +241,20 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
           />
         )}
         <AmazonStoreBadge url={product.url} />
+        {camelUrl && (
+          <a
+            href={camelUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center text-brand-gray hover:text-brand-ink transition-colors"
+            aria-label="Check price history at camelcamelcamel.com"
+            title="Check price history at camelcamelcamel.com"
+          >
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="currentColor" aria-hidden="true">
+              <path d="M11 31 L15 19 L21 26 L27 18 L32 25 L39 12 L43 8 L53 10 L53 14 L45 15 L40 16 L37 27 L37 38 L43 38 L43 57 L39 57 L39 39 L22 39 L22 57 L18 57 L18 38 L13 38 Z" />
+            </svg>
+          </a>
+        )}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -249,14 +264,14 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
             href={product.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm font-semibold text-brand-charcoal hover:underline line-clamp-2 leading-snug"
+            className="text-sm font-semibold text-brand-ink hover:underline line-clamp-2 leading-snug"
           >
             {product.title}
           </a>
           <button
             disabled={deleting}
             onClick={handleDelete}
-            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-brand-gray hover:text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Remove product"
             title="Remove product"
           >
@@ -277,13 +292,13 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
         {!showNoSellerSelected && (
           <div className="mt-2 flex items-center gap-2">
             {showOutOfStock ? (
-              <span className="bg-red-50 text-red-600 font-medium px-2 py-0.5 rounded-pill text-xs">
+              <span className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 font-medium px-2 py-0.5 rounded-pill text-xs">
                 Out of stock
               </span>
             ) : mainPrice !== null ? (
-              <span className="font-semibold text-brand-charcoal text-sm flex items-baseline gap-1">
+              <span className="font-semibold text-brand-ink text-sm flex items-baseline gap-1">
                 {mainPrice.toLocaleString(locale, { style: "currency", currency })}
-                {isUsed && <span className="text-amber-600 font-medium text-xs">(used)</span>}
+                {isUsed && <span className="text-amber-600 dark:text-amber-400 font-medium text-xs">(used)</span>}
               </span>
             ) : (
               <span className="text-xs text-brand-gray">No price data</span>
@@ -356,10 +371,10 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
               <thead>
                 <tr>
                   <th className="pb-1 w-5" />
-                  <th className="pb-1 text-left font-semibold text-brand-charcoal">Seller</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Price</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Shipping</th>
-                  <th className="pb-1 text-right font-semibold text-brand-charcoal pl-3 w-16">Total</th>
+                  <th className="pb-1 text-left font-semibold text-brand-ink">Seller</th>
+                  <th className="pb-1 text-right font-semibold text-brand-ink pl-3 w-16">Price</th>
+                  <th className="pb-1 text-right font-semibold text-brand-ink pl-3 w-16">Shipping</th>
+                  <th className="pb-1 text-right font-semibold text-brand-ink pl-3 w-16">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -386,19 +401,19 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                           className="accent-brand-charcoal"
                         />
                       </td>
-                      <td className={`py-0.5 ${isExcluded ? "text-brand-gray line-through" : "text-brand-charcoal"}`}>
+                      <td className={`py-0.5 ${isExcluded ? "text-brand-gray line-through" : "text-brand-ink"}`}>
                         {seller.name}
                         {seller.isSecondHand && (
-                          <span className="ml-1 text-amber-600 font-medium">(used)</span>
+                          <span className="ml-1 text-amber-600 dark:text-amber-400 font-medium">(used)</span>
                         )}
                       </td>
                       {isOutOfStock ? (
-                        <td colSpan={3} className="py-0.5 pl-3 text-center text-red-500 font-medium">
+                        <td colSpan={3} className="py-0.5 pl-3 text-center text-red-500 dark:text-red-400 font-medium">
                           Out of stock
                         </td>
                       ) : (
                         <>
-                          <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
+                          <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-ink"}`}>
                             {seller.price.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                           <td className="py-0.5 pl-3 text-right text-brand-gray">
@@ -406,7 +421,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
                               ? "Free"
                               : seller.shipping.toLocaleString(locale, { style: "currency", currency })}
                           </td>
-                          <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-charcoal"}`}>
+                          <td className={`py-0.5 pl-3 text-right font-medium ${isExcluded ? "text-brand-gray" : "text-brand-ink"}`}>
                             {total.toLocaleString(locale, { style: "currency", currency })}
                           </td>
                         </>
@@ -421,7 +436,7 @@ export function ProductCard({ product, onDeleted, onUpdated }: ProductCardProps)
 
         {/* Error message */}
         {cardError && (
-          <p className="mt-2 text-xs text-red-600">{cardError}</p>
+          <p className="mt-2 text-xs text-red-600 dark:text-red-400">{cardError}</p>
         )}
 
         {/* Action row */}

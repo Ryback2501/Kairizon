@@ -16,6 +16,7 @@ describe("AppSettingsRepository", () => {
     expect(settings.smtpUser).toBe("");
     expect(settings.smtpPass).toBe("");
     expect(settings.smtpFrom).toBe("");
+    expect(settings.theme).toBe("light");
   });
 
   it("get() is idempotent — subsequent calls return same row", async () => {
@@ -31,6 +32,7 @@ describe("AppSettingsRepository", () => {
       smtpUser: "user@example.com",
       smtpPass: "secret",
       smtpFrom: "App <user@example.com>",
+      theme: "dark",
     });
 
     expect(saved.smtpHost).toBe("smtp.example.com");
@@ -38,6 +40,12 @@ describe("AppSettingsRepository", () => {
     expect(saved.smtpUser).toBe("user@example.com");
     expect(saved.smtpPass).toBe("secret");
     expect(saved.smtpFrom).toBe("App <user@example.com>");
+    expect(saved.theme).toBe("dark");
+  });
+
+  it("save() persists the theme and get() reads it back", async () => {
+    const settings = await repo.get();
+    expect(settings.theme).toBe("dark");
   });
 
   it("save() is durable — get() after save() returns the saved values", async () => {
@@ -53,6 +61,7 @@ describe("AppSettingsRepository", () => {
       smtpUser: "other@other.com",
       smtpPass: "newpass",
       smtpFrom: "Other <other@other.com>",
+      theme: "light",
     });
 
     const settings = await repo.get();
