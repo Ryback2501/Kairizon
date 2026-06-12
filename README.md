@@ -3,22 +3,23 @@
 [![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Built with Claude Code](https://img.shields.io/badge/-Claude_Code-000000?logo=claude&logoColor=white)](https://claude.ai/code)
 [![GitHub Release](https://img.shields.io/github/v/release/Ryback2501/Kairizon)](https://github.com/Ryback2501/Kairizon/releases/latest)
-[![Build](https://img.shields.io/github/actions/workflow/status/Ryback2501/Kairizon/create-release.yml?label=release)](https://github.com/Ryback2501/Kairizon/actions/workflows/create-release.yml)
+[![Build](https://img.shields.io/github/actions/workflow/status/Ryback2501/Kairizon/release.yml?label=release)](https://github.com/Ryback2501/Kairizon/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker Hub](https://img.shields.io/badge/docker-ryback2501%2Fkairizon-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/ryback2501/kairizon)
 [![Docker Pulls](https://img.shields.io/docker/pulls/ryback2501/kairizon?logo=docker&logoColor=white)](https://hub.docker.com/r/ryback2501/kairizon)
 [![GitHub Stars](https://img.shields.io/github/stars/Ryback2501/Kairizon?style=flat&logo=github)](https://github.com/Ryback2501/Kairizon/stargazers)
 
-A self-hosted Amazon price tracker. Add product URLs, set a target price, and receive an email the moment the price drops to or below your threshold. Optionally get notified when an out-of-stock item becomes available again.
+A self-hosted Amazon price checker. Add product URLs, set a target price, and receive an email the moment the price drops to or below your threshold. Optionally get notified when an out-of-stock item becomes available again.
 
 > Vibe-coded with [Claude Code](https://claude.ai/code).
 
 ## Features
 
-- Track Amazon products by URL
+- Check Amazon product prices by URL
 - Set a target price and receive an email alert when the price hits it
 - Get notified when an out-of-stock product becomes available again
 - Filter out second-hand listings or specific sellers per product
+- Jump to each product's price history on [camelcamelcamel.com](https://camelcamelcamel.com) with one click (supported Amazon marketplaces only)
 - Configure email notifications directly from the UI — no config files needed
 - Runs entirely on your own machine; no accounts, no subscriptions
 - Data saved in an SQLite *.db file (kairizon.db by default)
